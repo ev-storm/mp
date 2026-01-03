@@ -1,0 +1,134 @@
+/* Основные стили приложения */
+
+/* Импорт шрифта Montserrat */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap");
+:root {
+  --back: #e9e9e9;
+  --black: #2d2d2d;
+  --grey: #797979;
+  --white: #fff;
+
+  --blue: #6ba0e5;
+  --orange: #ff9c5e;
+  --red: #ea6067;
+  --green: #45aa82;
+  --blue_2: #34b2e8;
+
+  --f-1: 18px;
+  --f-2: 14px;
+  --f-p: 12px;
+  --font-primary: "Montserrat", -apple-system, "Helvetica Neue", sans-serif;
+}
+
+/* Темная тема */
+html.dark-theme {
+  --back: #1a1a1a;
+  --black: #e0e0e0;
+  --grey: #dedede;
+  --white: #343434;
+}
+
+html.dark-theme body {
+  background-color: var(--back);
+  color: var(--black);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.element::-webkit-scrollbar {
+  width: 0;
+}
+::-webkit-scrollbar {
+  width: 0;
+}
+
+html {
+  font-family: var(--font-primary);
+  font-weight: 500;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: auto;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  touch-action: manipulation;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  color: var(--font);
+  background-color: var(--back);
+}
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.container {
+  display: flex;
+  align-items: start;
+  width: 100%;
+  max-width: 1800px;
+  height: 87vh;
+  max-height: 1000px;
+  margin-top: 13vh;
+}
+
+ul {
+  list-style: none;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--blue);
+}
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  outline: none;
+}
+
+input {
+}
+
+input::placeholder {
+}
+
+textarea {
+}
+
+textarea::placeholder {
+}
+
+h1 {
+  font-weight: 400;
+  font-size: var(--f-1);
+}
+h2 {
+  font-weight: 500;
+  color: var(--black);
+  font-size: var(--f-2);
+}
+h3 {
+  font-weight: 600;
+  color: var(--black);
+}
+p {
+  font-weight: 500;
+  color: var(--grey);
+  font-size: var(--f-p);
+  line-height: 1.5;
+}
+span {
+}
+
+footer {
+}
