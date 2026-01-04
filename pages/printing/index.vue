@@ -79,6 +79,7 @@ useHead({
       img="/img/main-carts/print/10.svg"
       color="var(--blue)"
       hoverBg="var(--blue)"
+      link="/printing/lamination/doc"
     />
     <MainCarts
       title="Тиснение"

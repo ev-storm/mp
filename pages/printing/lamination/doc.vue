@@ -9,13 +9,12 @@ import {
 definePageMeta({
   key: (route) => route.fullPath,
 });
-
 useHead({
-  title: "Печать листовок и буклетов",
+  title: "Ламинирование документов",
   meta: [
     {
       name: "description",
-      content: "Плоттерная резка бумаги",
+      content: "Ламинирование документов",
     },
   ],
 });
@@ -23,28 +22,29 @@ useHead({
 // Конфигурация полей для буклетов
 const fields = reactive<OrderField[]>([
   {
-    id: "paper",
+    id: "format",
     type: "dropdown",
-    label: "Бумага",
-    placeholder: "Выберите вплотность бумаги",
+    label: "Формат",
+    placeholder: "Выберите формат",
     options: [
-      { label: "80 г/м²", price: 0 },
-      { label: "115 г/м²", price: 5 },
-      { label: "130 г/м²", price: 10 },
-      { label: "150 г/м²", price: 15 },
-      { label: "170 г/м²", price: 20 },
-      { label: "200 г/м²", price: 25 },
-      { label: "250 г/м²", price: 35 },
-      { label: "300 г/м²", price: 45 },
+      { label: "А6 (105×148 мм)", price: 3 },
+      { label: "А5 (148×210 мм)", price: 5 },
+      { label: "А4 (210×297 мм)", price: 8 },
+      { label: "А3 (297×420 мм)", price: 15 },
+      { label: "Евро (99×210 мм)", price: 6 },
     ],
     value: null,
   },
   {
-    id: "size-quantity",
-    type: "input",
-    label: "Размер",
-    placeholder: "Введите размер (мм)",
-    inputType: "text",
+    id: "lamination",
+    type: "dropdown",
+    label: "Тип покрытия",
+    placeholder: "Выберите вид ламинации",
+    options: [
+      { label: "Глянцевая", price: 3 },
+      { label: "Матовая", price: 3 },
+      { label: "Soft-touch", price: 8 },
+    ],
     value: null,
   },
   {
@@ -54,17 +54,6 @@ const fields = reactive<OrderField[]>([
     placeholder: "Введите количество",
     inputType: "number",
     min: 1,
-    value: null,
-  },
-  {
-    id: "form",
-    type: "dropdown",
-    label: "Форма выреза",
-    placeholder: "Выберите форму",
-    options: [
-      { label: "Прямоугольная", price: 10 },
-      { label: "Фигурная", price: 20 },
-    ],
     value: null,
   },
 ]);
@@ -172,29 +161,38 @@ const submitOrder = () => {
       <div class="tab-con">
         <div class="tab-btn-con">
           <NuxtLink
-            to="/printing/stickers/stickers-print"
+            to="/printing/lamination/doc"
             class="tab-btn"
             :class="{
-              active: $route.path === '/printing/stickers/stickers-print',
+              active: $route.path === '/printing/lamination/doc',
             }"
           >
-            Печать наклеек
+            Ламинирование документов
           </NuxtLink>
 
           <NuxtLink
-            to="/printing/stickers/plotter-paper"
+            to="/printing/lamination/large"
             class="tab-btn"
             :class="{
-              active: $route.path === '/printing/stickers/plotter-paper',
+              active: $route.path === '/printing/lamination/large',
             }"
           >
-            Плоттерная резка бумаги
+            Широкоформатное ламинирование
+          </NuxtLink>
+          <NuxtLink
+            to="/printing/lamination/more"
+            class="tab-btn"
+            :class="{
+              active: $route.path === '/printing/lamination/more',
+            }"
+          >
+            Подробнее
           </NuxtLink>
         </div>
         <div class="tab-main">
           <div class="tab-option">
             <div class="tab-option-img">
-              <img src="/public/img/stick/2.png" alt="" />
+              <img src="/public/img/lam/1.png" alt="" />
             </div>
             <TabOptionMain :fields="fields" />
             <div class="tab-option-btn-con">
@@ -208,12 +206,17 @@ const submitOrder = () => {
             </div>
           </div>
           <TabOrder
-            title="Плоттерная резка бумаги"
-            subTitle="Плоттерная резка применима во многих направлениях. В частности, данная технология используется при изготовлении:<br>
-- Рекламных щитов и вывесок; <br>- Предупреждающих знаков; <br>- Информационных табличек; <br>- Наклеек для автотранспорта и оборудования;"
+            title="Ламинирование документов"
+            subTitle="Преимущества ламинирования документов :<br>
+- Укрепление и сохранение цвета и контрастности изображения;<br>
+- Долговременная защита документов, которые нуждаются в частом использовании, становятся практически неуязвимыми;<br>
+- Избежание - складок, морщинок, повреждений от солнца, разрывов, пятен, отпечатков пальцев и жира;<br>
+- Быстрый и надежный способ защиты ваших документов от промокания и истирания.
+ С помощью ламинирования  Ваш документ примет более презентабельный вид. "
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"
+            :show-design-button="false"
             :form-data="formData"
             :macket-file-name="macketFileName"
             @update:is-design-active="isDesignActive = $event"

@@ -9,13 +9,12 @@ import {
 definePageMeta({
   key: (route) => route.fullPath,
 });
-
 useHead({
-  title: "Печать листовок и буклетов",
+  title: "Широкоформатное ламинирование",
   meta: [
     {
       name: "description",
-      content: "Плоттерная резка бумаги",
+      content: "Широкоформатное ламинирование",
     },
   ],
 });
@@ -23,28 +22,25 @@ useHead({
 // Конфигурация полей для буклетов
 const fields = reactive<OrderField[]>([
   {
-    id: "paper",
+    id: "format",
     type: "dropdown",
-    label: "Бумага",
-    placeholder: "Выберите вплотность бумаги",
+    label: "Формат",
+    placeholder: "Выберите формат",
     options: [
-      { label: "80 г/м²", price: 0 },
-      { label: "115 г/м²", price: 5 },
-      { label: "130 г/м²", price: 10 },
-      { label: "150 г/м²", price: 15 },
-      { label: "170 г/м²", price: 20 },
-      { label: "200 г/м²", price: 25 },
-      { label: "250 г/м²", price: 35 },
-      { label: "300 г/м²", price: 45 },
+      { label: "А1 (105×148 мм)", price: 100 },
+      { label: "А0 (148×210 мм)", price: 200 },
     ],
     value: null,
   },
   {
-    id: "size-quantity",
-    type: "input",
-    label: "Размер",
-    placeholder: "Введите размер (мм)",
-    inputType: "text",
+    id: "lamination",
+    type: "dropdown",
+    label: "Тип покрытия",
+    placeholder: "Выберите вид ламинации",
+    options: [
+      { label: "Глянцевая", price: 3 },
+      { label: "Матовая", price: 3 },
+    ],
     value: null,
   },
   {
@@ -56,16 +52,15 @@ const fields = reactive<OrderField[]>([
     min: 1,
     value: null,
   },
+
   {
-    id: "form",
-    type: "dropdown",
-    label: "Форма выреза",
-    placeholder: "Выберите форму",
-    options: [
-      { label: "Прямоугольная", price: 10 },
-      { label: "Фигурная", price: 20 },
-    ],
-    value: null,
+    id: "cold-lam",
+    type: "toggle",
+    label: "Холодное ламинирование",
+    tooltip:
+      "Холодное ламинирование применяется для защиты документов и материалов, которые не выдерживают высокие температуры, например, фотографии, УЗИ-снимки, билеты, чеки, старинные бумаги или любые термочувствительные поверхности.",
+    price: 300,
+    value: false,
   },
 ]);
 
@@ -172,29 +167,38 @@ const submitOrder = () => {
       <div class="tab-con">
         <div class="tab-btn-con">
           <NuxtLink
-            to="/printing/stickers/stickers-print"
+            to="/printing/lamination/doc"
             class="tab-btn"
             :class="{
-              active: $route.path === '/printing/stickers/stickers-print',
+              active: $route.path === '/printing/lamination/doc',
             }"
           >
-            Печать наклеек
+            Ламинирование документов
           </NuxtLink>
 
           <NuxtLink
-            to="/printing/stickers/plotter-paper"
+            to="/printing/lamination/large"
             class="tab-btn"
             :class="{
-              active: $route.path === '/printing/stickers/plotter-paper',
+              active: $route.path === '/printing/lamination/large',
             }"
           >
-            Плоттерная резка бумаги
+            Широкоформатное ламинирование
+          </NuxtLink>
+          <NuxtLink
+            to="/printing/lamination/more"
+            class="tab-btn"
+            :class="{
+              active: $route.path === '/printing/lamination/more',
+            }"
+          >
+            Подробнее
           </NuxtLink>
         </div>
         <div class="tab-main">
           <div class="tab-option">
             <div class="tab-option-img">
-              <img src="/public/img/stick/2.png" alt="" />
+              <img src="/public/img/lam/2.png" alt="" />
             </div>
             <TabOptionMain :fields="fields" />
             <div class="tab-option-btn-con">
@@ -208,12 +212,12 @@ const submitOrder = () => {
             </div>
           </div>
           <TabOrder
-            title="Плоттерная резка бумаги"
-            subTitle="Плоттерная резка применима во многих направлениях. В частности, данная технология используется при изготовлении:<br>
-- Рекламных щитов и вывесок; <br>- Предупреждающих знаков; <br>- Информационных табличек; <br>- Наклеек для автотранспорта и оборудования;"
+            title="Широкоформатное ламинирование"
+            subTitle="Широкоформатное ламинирование — это процесс покрытия больших печатных материалов (плакаты, баннеры, карты, чертежи) специальной защитной пленкой с помощью профессиональных устройств для защиты от влаги, пыли, выцветания, механических повреждений и придания презентабельного вида. <br/>Используются горячий и холодный методы, разные типы пленок (глянцевые, матовые, текстурные), а также возможно инкапсулирование (запайка) и монтаж на жесткие основы. "
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"
+            :show-design-button="false"
             :form-data="formData"
             :macket-file-name="macketFileName"
             @update:is-design-active="isDesignActive = $event"

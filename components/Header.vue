@@ -291,6 +291,31 @@ const breadcrumbMap: Record<string, Breadcrumb> = {
     third: "Плоттерная резка",
     thirdLink: "/printing/stickers/plotter-paper",
   },
+  // Ламинирование
+  "/printing/lamination/doc": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Ламинирование документов",
+    subLink: "/printing/lamination/doc",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/lamination/large": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Широкоформатное ламинирование",
+    subLink: "/printing/lamination/large",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/lamination/more": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Ламинирование документов",
+    subLink: "/printing/lamination/doc",
+    third: "Дополнительно",
+    thirdLink: "/printing/lamination/more",
+  },
   // Фотопечать
   "/photo": {
     main: "Фотопечать",

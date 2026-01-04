@@ -7,15 +7,21 @@ interface FormData {
   email: string;
 }
 
-const props = defineProps<{
-  title: string;
-  subTitle?: string;
-  fields: OrderField[];
-  isDesignActive: boolean;
-  totalPrice: number;
-  formData: FormData;
-  macketFileName: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    title: string;
+    subTitle?: string;
+    fields: OrderField[];
+    isDesignActive: boolean;
+    totalPrice: number;
+    formData: FormData;
+    macketFileName: string;
+    showDesignButton?: boolean;
+  }>(),
+  {
+    showDesignButton: true,
+  }
+);
 
 const emit = defineEmits<{
   (e: "update:isDesignActive", value: boolean): void;
@@ -116,7 +122,9 @@ const formatPrice = (price: number): string => {
           <span v-else class="not-selected">—</span>
         </p>
       </template>
-      <p v-if="isDesignActive">Заказать дизайн: <span>Да</span></p>
+      <p v-if="showDesignButton && isDesignActive">
+        Заказать дизайн: <span>Да</span>
+      </p>
     </div>
     <div class="calc-order">
       <h1>{{ formatPrice(totalPrice) }} ₽</h1>
@@ -144,6 +152,7 @@ const formatPrice = (price: number): string => {
         </div>
       </div>
       <button
+        v-if="showDesignButton"
         class="tab-order-macket-des"
         :class="{ active: isDesignActive }"
         @click="toggleDesign"
@@ -192,7 +201,7 @@ const formatPrice = (price: number): string => {
 }
 
 .tab-order-name {
-  padding: 20px 0 10px 0;
+  padding: 20px 0;
 }
 
 .tab-order-name h1 {
@@ -205,9 +214,11 @@ const formatPrice = (price: number): string => {
   width: 100%;
   padding: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex-wrap: wrap;
   height: 130px;
+  justify-content: start;
+  gap: 0 20px;
 }
 
 .tab-order-options p {
@@ -217,6 +228,8 @@ const formatPrice = (price: number): string => {
   margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
+  border: solid #d3d3d3;
+  border-width: 0 0 1px 0;
 }
 
 .tab-order-options p span {

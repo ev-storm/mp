@@ -86,154 +86,6 @@ const fields = reactive<OrderField[]>([
   },
 ]);
 
-// Активная кнопка буклета (индекс)
-const activeBookBtn = ref<number | null>(null);
-
-// SVG контейнеры для book-btn
-const bookBtnSvgRefs = ref<(HTMLElement | null)[]>([]);
-
-// Пути к SVG иконкам буклетов
-const bookBtnSvgPaths = [
-  "/img/book/btn/1.svg",
-  "/img/book/btn/2.svg",
-  "/img/book/btn/3.svg",
-  "/img/book/btn/4.svg",
-  "/img/book/btn/5.svg",
-  "/img/book/btn/6.svg",
-];
-
-// Загрузка SVG с подготовкой для анимации
-async function loadBookBtnSvg(container: HTMLElement | null, svgPath: string) {
-  if (!container) return;
-  try {
-    const response = await fetch(svgPath);
-    const svgText = await response.text();
-    container.innerHTML = svgText;
-
-    // Добавляем stroke-dasharray ко всем path
-    const paths = container.querySelectorAll(
-      "path, line, circle, rect, polyline, polygon"
-    );
-    paths.forEach((path) => {
-      const el = path as SVGGeometryElement;
-      if (el.getTotalLength) {
-        const length = el.getTotalLength();
-        el.style.strokeDasharray = `${length}`;
-        el.style.strokeDashoffset = "0";
-        el.style.setProperty("--path-length", `${length}`);
-      }
-    });
-  } catch (e) {
-    console.error("Failed to load SVG:", e);
-  }
-}
-
-// Функция для установки ref
-const setBookBtnSvgRef = (index: number) => (el: any) => {
-  bookBtnSvgRefs.value[index] = el;
-};
-
-// Загружаем все SVG при монтировании
-onMounted(() => {
-  bookBtnSvgRefs.value.forEach(
-    (container: HTMLElement | null, index: number) => {
-      const path = bookBtnSvgPaths[index];
-      if (path) {
-        loadBookBtnSvg(container, path);
-      }
-    }
-  );
-});
-
-// Маппинг кнопок буклета на опции сложения
-const bookBtnToFoldingMap: Record<number, string> = {
-  0: "Без сложения",
-  1: "1 фальц (пополам)",
-  2: "2 фальца (евробуклет)",
-  3: "2 фальца (гармошка)",
-  4: "3 фальца (гармошка)",
-  5: "4 фальца (гармошка)",
-};
-
-// Обратный маппинг: опция сложения -> индекс кнопки
-const foldingToBookBtnMap: Record<string, number> = {
-  "Без сложения": 0,
-  "1 фальц (пополам)": 1,
-  "2 фальца (евробуклет)": 2,
-  "2 фальца (гармошка)": 3,
-  "3 фальца (гармошка)": 4,
-  "4 фальца (гармошка)": 5,
-};
-
-// Выбор кнопки буклета
-const selectBookBtn = (index: number) => {
-  activeBookBtn.value = index;
-
-  // Находим поле folding и устанавливаем значение
-  const foldingFieldItem = fields.find((f: OrderField) => f.id === "folding");
-  if (foldingFieldItem && foldingFieldItem.type === "dropdown") {
-    const optionLabel = bookBtnToFoldingMap[index];
-    const option = foldingFieldItem.options.find(
-      (o: { label: string; price: number }) => o.label === optionLabel
-    );
-    if (option) {
-      foldingFieldItem.value = option;
-    }
-  }
-};
-
-// Следим за изменениями в dropdown "Сложение" для обратной синхронизации
-const foldingFieldComputed = computed(() =>
-  fields.find((f: OrderField) => f.id === "folding")
-);
-
-watch(
-  () =>
-    foldingFieldComputed.value?.type === "dropdown"
-      ? foldingFieldComputed.value.value
-      : null,
-  (newValue: { label: string; price: number } | null) => {
-    if (newValue && newValue.label) {
-      const btnIndex = foldingToBookBtnMap[newValue.label];
-      if (btnIndex !== undefined) {
-        activeBookBtn.value = btnIndex;
-      }
-    } else {
-      activeBookBtn.value = null;
-    }
-  },
-  { deep: true }
-);
-
-// Следим за изменениями в dropdown "Бумага" для автоактивации Биговки
-const paperFieldComputed = computed(() =>
-  fields.find((f: OrderField) => f.id === "paper")
-);
-const creasingFieldComputed = computed(() =>
-  fields.find((f: OrderField) => f.id === "creasing")
-);
-
-watch(
-  () =>
-    paperFieldComputed.value?.type === "dropdown"
-      ? paperFieldComputed.value.value
-      : null,
-  (newValue: { label: string; price: number } | null) => {
-    if (newValue && newValue.label) {
-      // Извлекаем число из label, например "200 г/м²" -> 200
-      const match = newValue.label.match(/(\d+)/);
-      if (match) {
-        const weight = parseInt(match[1], 10);
-        // Если плотность >= 200, активируем Биговку
-        if (weight >= 200 && creasingFieldComputed.value?.type === "toggle") {
-          creasingFieldComputed.value.value = true;
-        }
-      }
-    }
-  },
-  { deep: true }
-);
-
 // Заказать дизайн
 const isDesignActive = ref(false);
 const designPrice = 1500;
@@ -426,12 +278,12 @@ const submitOrder = () => {
   display: flex;
 }
 .tab-option {
-width: 65%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
+  width: 65%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
 }
 .tab-option-img {
   width: 90%;

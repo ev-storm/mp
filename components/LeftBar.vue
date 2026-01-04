@@ -97,13 +97,29 @@
             data-menu-id="t12"
             :class="{ highlighted: highlightedItemId === 't12' }"
           >
-            Ламинирование документов
+            <NuxtLink
+              to="/printing/lamination/doc"
+              :class="{
+                'active-parent':
+                  route.path.startsWith('/printing/lamination/doc') ||
+                  route.path.startsWith('/printing/lamination/more'),
+              }"
+              >Ламинирование документов</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t13"
             :class="{ highlighted: highlightedItemId === 't13' }"
           >
-            Широкоформатное ламинирование
+            <NuxtLink
+              to="/printing/lamination/large"
+              :class="{
+                'active-parent':
+                  route.path.startsWith('/printing/lamination/large') ||
+                  route.path.startsWith('/printing/lamination/more'),
+              }"
+              >Широкоформатное ламинирование</NuxtLink
+            >
           </li>
           <li class="divider"></li>
           <li
