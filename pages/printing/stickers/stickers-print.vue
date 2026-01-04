@@ -11,7 +11,7 @@ definePageMeta({
 });
 
 useHead({
-  title: "Печать листовок и буклетов",
+  title: "Печать наклеек",
   meta: [
     {
       name: "description",
@@ -128,8 +128,8 @@ const toastMessage = ref("");
 const submitOrder = () => {
   // Собираем все данные заказа
   const orderData = {
-    productType: "Буклет",
-    printType: "Лазерная печать",
+    productType: "Наклейки",
+    printType: "Наклейки",
     // Выбранные опции
     options: fields.map((f: OrderField) => {
       let displayValue: string | null = null;
@@ -172,8 +172,6 @@ const submitOrder = () => {
     // Итоговая цена
     totalPrice: totalPrice.value,
   };
-
-  console.log("Order data:", orderData);
 
   // TODO: отправка данных на сервер
 
@@ -250,6 +248,7 @@ const submitOrder = () => {
 .tab-main {
   width: 100%;
   height: 75vh;
+  max-height: 900px;
   background: var(--white);
   border-radius: 8px;
   overflow: scroll;
@@ -280,6 +279,7 @@ const submitOrder = () => {
 .tab-option {
   width: 65%;
   height: 100%;
+  max-height: 800px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -288,6 +288,7 @@ const submitOrder = () => {
 .tab-option-img {
   width: 90%;
   height: 50%;
+  max-height: 300px;
   background: var(--back);
   overflow: hidden;
   border-radius: 5px;

@@ -11,35 +11,59 @@
             data-menu-id="t1"
             :class="{ highlighted: highlightedItemId === 't1' }"
           >
-            Сканирование документа до А3
+            <NuxtLink
+              to="/printing/scan"
+              :class="{
+                'active-parent': route.path === '/printing/scan',
+              }"
+              >Сканирование документа до А3</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t2"
             :class="{ highlighted: highlightedItemId === 't2' }"
           >
-            Широкоформатное сканирование
+            <NuxtLink
+              to="/printing/large/scan"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/large/scan'),
+              }"
+              >Широкоформатное сканирование</NuxtLink
+            >
           </li>
           <li class="divider"></li>
           <li
             data-menu-id="t3"
             :class="{ highlighted: highlightedItemId === 't3' }"
           >
-            Печать и копирование до А3
+            <NuxtLink
+              to="/printing/scan/print"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/scan/print'),
+              }"
+              >Печать и копирование до А3</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t4"
             :class="{ highlighted: highlightedItemId === 't4' }"
           >
-            Широкоформатная печать
+            <NuxtLink
+              to="/printing/large/print"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/large/print'),
+              }"
+              >Широкоформатная печать</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t5"
             :class="{ highlighted: highlightedItemId === 't5' }"
           >
             <NuxtLink
-              to="/printing/booklet/laser-print"
+              to="/printing/catalogs"
               :class="{
-                'active-parent': route.path.startsWith('/printing/booklet'),
+                'active-parent': route.path.startsWith('/printing/catalogs'),
               }"
               >Печать листовок и буклетов</NuxtLink
             >
@@ -60,7 +84,13 @@
             data-menu-id="t7"
             :class="{ highlighted: highlightedItemId === 't7' }"
           >
-            Печать брошюр и книг
+            <NuxtLink
+              to="/printing/catalogs"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/catalogs'),
+              }"
+              >Печать брошюр и книг</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t8"
@@ -78,19 +108,37 @@
             data-menu-id="t9"
             :class="{ highlighted: highlightedItemId === 't9' }"
           >
-            Печать курсовых и дипломных работ
+            <NuxtLink
+              to="/printing/diplom"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/diplom'),
+              }"
+              >Печать курсовых и дипломных работ</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t10"
             :class="{ highlighted: highlightedItemId === 't10' }"
           >
-            Печать черчежей
+            <NuxtLink
+              to="/printing/large/plan"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/large/plan'),
+              }"
+              >Печать черчежей</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t11"
             :class="{ highlighted: highlightedItemId === 't11' }"
           >
-            Печать на кальке
+            <NuxtLink
+              to="/printing/tracing"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/tracing'),
+              }"
+              >Печать на кальке</NuxtLink
+            >
           </li>
           <li class="divider"></li>
           <li
@@ -126,19 +174,39 @@
             data-menu-id="t14"
             :class="{ highlighted: highlightedItemId === 't14' }"
           >
-            Переплет на металлическую пружину
+            <NuxtLink
+              to="/printing/bind/metal"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/bind/metal'),
+              }"
+              >Переплет на металлическую пружину</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t15"
             :class="{ highlighted: highlightedItemId === 't15' }"
           >
-            Переплет на пластиковую пружину
+            <NuxtLink
+              to="/printing/bind/plastic"
+              :class="{
+                'active-parent': route.path.startsWith(
+                  '/printing/bind/plastic'
+                ),
+              }"
+              >Переплет на пластиковую пружину</NuxtLink
+            >
           </li>
           <li
             data-menu-id="t16"
             :class="{ highlighted: highlightedItemId === 't16' }"
           >
-            Твердый переплет
+            <NuxtLink
+              to="/printing/bind/hard"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/bind/hard'),
+              }"
+              >Твердый переплет</NuxtLink
+            >
           </li>
           <li class="divider"></li>
           <li
@@ -157,7 +225,13 @@
             data-menu-id="t19"
             :class="{ highlighted: highlightedItemId === 't19' }"
           >
-            Тиражирование на ризографе
+            <NuxtLink
+              to="/printing/replication"
+              :class="{
+                'active-parent': route.path.startsWith('/printing/replication'),
+              }"
+              >Тиражирование на ризографе</NuxtLink
+            >
           </li>
         </ul>
       </li>

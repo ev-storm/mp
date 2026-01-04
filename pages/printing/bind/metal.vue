@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, computed, ref } from "vue";
+import { reactive, computed, ref, watch, onMounted } from "vue";
 import type { OrderField } from "~/types/order-fields";
 import {
   calculateTotalPrice,
@@ -11,29 +11,38 @@ definePageMeta({
 });
 
 useHead({
-  title: "Печать визиток",
+  title: "Переплёт на металлическую пружину",
   meta: [
     {
       name: "description",
-      content: "Печать визиток | Лазерная печать",
+      content: "Переплёт на металлическую пружину",
     },
   ],
 });
 
-// Конфигурация полей для визиток
+// Конфигурация полей для буклетов
 const fields = reactive<OrderField[]>([
   {
-    id: "paper",
+    id: "hole",
     type: "dropdown",
-    label: "Бумага",
-    placeholder: "Выберите плотность бумаги",
+    label: "Диаметр отверстия (мм)",
+    placeholder: "Выберите диаметр",
     options: [
-      { label: "80 г/м²", price: 0 },
-      { label: "120 г/м²", price: 10 },
-      { label: "160 г/м²", price: 20 },
-      { label: "200 г/м²", price: 30 },
-      { label: "250 г/м²", price: 40 },
-      { label: "300 г/м²", price: 50 },
+      { label: "Ø10", price: 3 },
+      { label: "Ø15", price: 5 },
+      { label: "Ø20", price: 10 },
+    ],
+    value: null,
+  },
+  {
+    id: "step",
+    type: "dropdown",
+    label: "Шаг",
+    placeholder: "Выберите количество",
+    options: [
+      { label: "8", price: 3 },
+      { label: "10", price: 5 },
+      { label: "15", price: 10 },
     ],
     value: null,
   },
@@ -41,58 +50,13 @@ const fields = reactive<OrderField[]>([
     id: "format",
     type: "dropdown",
     label: "Формат",
-    placeholder: "Выберите формат бумаги",
+    placeholder: "Выберите формат",
     options: [
-      { label: "90x50", price: 150 },
-      { label: "95x55", price: 200 },
-    ],
-    value: null,
-  },
-  {
-    id: "sides",
-    type: "dropdown",
-    label: "Стороны",
-    placeholder: "Выберите стороны печати",
-    options: [
-      { label: "Односторонняя", price: 0 },
-      { label: "Двусторонняя", price: 100 },
-    ],
-    value: null,
-  },
-  {
-    id: "radius",
-    type: "dropdown",
-    label: "Скругление углов",
-    placeholder: "Выберите диаметр скругления",
-    options: [
-      { label: "Без скругления", price: 0 },
-      { label: "Ø20", price: 15 },
-      { label: "Ø25", price: 20 },
-      { label: "Ø30", price: 25 },
-    ],
-    value: null,
-  },
-  {
-    id: "color",
-    type: "dropdown",
-    label: "Цвет печати",
-    placeholder: "Выберите цвет печати",
-    options: [
-      { label: "Черно-белая", price: 0 },
-      { label: "Цветная", price: 50 },
-    ],
-    value: null,
-  },
-  {
-    id: "lamination",
-    type: "dropdown",
-    label: "Ламинация",
-    placeholder: "Выберите тип ламинации",
-    options: [
-      { label: "Без ламинации", price: 0 },
-      { label: "Матовая", price: 30 },
-      { label: "Глянцевая", price: 30 },
-      { label: "Soft-touch", price: 50 },
+      { label: "А6 (105×148 мм)", price: 3 },
+      { label: "А5 (148×210 мм)", price: 5 },
+      { label: "А4 (210×297 мм)", price: 8 },
+      { label: "А3 (297×420 мм)", price: 15 },
+      { label: "Евро (99×210 мм)", price: 6 },
     ],
     value: null,
   },
@@ -109,7 +73,7 @@ const fields = reactive<OrderField[]>([
 
 // Заказать дизайн
 const isDesignActive = ref(false);
-const designPrice = 1000;
+const designPrice = 1500;
 
 // Вычисляем общую стоимость
 const totalPrice = computed(() => {
@@ -149,8 +113,8 @@ const toastMessage = ref("");
 const submitOrder = () => {
   // Собираем все данные заказа
   const orderData = {
-    productType: "Визитка",
-    printType: "Лазерная печать",
+    productType: "Переплёт на металлическую пружину",
+    printType: "Переплёт на металлическую пружину",
     options: fields.map((f: OrderField) => {
       let displayValue: string | null = null;
       let price = 0;
@@ -191,6 +155,8 @@ const submitOrder = () => {
 
   console.log("Order data:", orderData);
 
+  // TODO: отправка данных на сервер
+
   toastMessage.value = "Заказ отправлен!";
   showToast.value = true;
 };
@@ -202,35 +168,38 @@ const submitOrder = () => {
       <div class="tab-con">
         <div class="tab-btn-con">
           <NuxtLink
-            to="/printing/visit-card/laser-print"
+            to="/printing/bind/hard"
             class="tab-btn"
             :class="{
-              active: $route.path === '/printing/visit-card/laser-print',
+              active: $route.path === '/printing/bind/hard',
             }"
           >
-            Лазерная печать
+            Твердый переплет
           </NuxtLink>
+
           <NuxtLink
-            to="/printing/visit-card/uf-print"
-            class="tab-btn"
-            :class="{ active: $route.path === '/printing/visit-card/uf-print' }"
-          >
-            УФ печать
-          </NuxtLink>
-          <NuxtLink
-            to="/printing/visit-card/ofset-print"
+            to="/printing/bind/plastic"
             class="tab-btn"
             :class="{
-              active: $route.path === '/printing/visit-card/ofset-print',
+              active: $route.path === '/printing/bind/plastic',
             }"
           >
-            Офсетная печать
+            Пластиковая пружина
+          </NuxtLink>
+          <NuxtLink
+            to="/printing/bind/metal"
+            class="tab-btn"
+            :class="{
+              active: $route.path === '/printing/bind/metal',
+            }"
+          >
+            Металлическая пружина
           </NuxtLink>
         </div>
         <div class="tab-main">
           <div class="tab-option">
             <div class="tab-option-img">
-              <img src="/img/visit/1.png" alt="" />
+              <img src="/public/img/bind/3.png" alt="" />
             </div>
             <TabOptionMain :fields="fields" />
             <div class="tab-option-btn-con">
@@ -244,10 +213,25 @@ const submitOrder = () => {
             </div>
           </div>
           <TabOrder
-            title="Визитка"
+            :show-macket-button="false"
+            :show-order-form="false"
+            title="Переплёт на металлическую пружину"
+            subTitle="Переплет на
+          металлическую пружину наиболее прочен. Кроме того, переплетенный
+          документ можно открывать на 360 градусов, в отличие от переплета на
+          пластиковую пружину (мешает спинка пластиковой пружинки). Но - обжатую
+          металлическую пружину нельзя использовать повторно, т.к. она
+          деформируется после обжима.<br /><br />При выборе металлической
+          пружины необходимо знать:<br />какой шаг имеет брошюровщик, с помощью
+          которого вы будете осуществлять переплетвысота переплетаемой стопы
+          брошюровщика (или количество листов и какой плотности), чтобы
+          правильно определиться с диаметром пружины и желательно, количество
+          переплетов (тираж), чтобы экономично подобрать «фасовку» пружины
+          (бобины или форматные)."
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"
+            :show-design-button="false"
             :form-data="formData"
             :macket-file-name="macketFileName"
             @update:is-design-active="isDesignActive = $event"
@@ -310,17 +294,106 @@ const submitOrder = () => {
   height: 50%;
   max-height: 300px;
   background: var(--back);
+  overflow: hidden;
   border-radius: 5px;
   margin: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+.tab-option-img img {
+  width: 100%;
+}
 .tab-option-btn-con {
   width: 90%;
   height: 10%;
   display: flex;
   justify-content: start;
+}
+
+.book-btn-con {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+.book-btn {
+  width: 30%;
+  height: 45%;
+  transition: all 0.3s ease-in-out;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 20px;
+  justify-content: space-around;
+}
+.book-btn:hover {
+  background: var(--back);
+}
+
+.book-btn.active {
+  background: var(--blue);
+  box-shadow: #00000030 0px 5px 20px;
+  scale: 1.1;
+}
+.book-btn.active h2,
+.book-btn.active h2 span {
+  color: #fff;
+}
+
+/* SVG контейнер */
+.book-btn-svg {
+  height: 70%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.book-btn-svg :deep(svg) {
+  height: 100%;
+  width: auto;
+}
+.book-btn-svg :deep(path),
+.book-btn-svg :deep(line),
+.book-btn-svg :deep(circle),
+.book-btn-svg :deep(rect),
+.book-btn-svg :deep(polyline),
+.book-btn-svg :deep(polygon) {
+  stroke: var(--blue);
+  fill: none;
+  transition: stroke 0.1s ease-in-out;
+}
+
+/* Active состояние SVG с анимацией */
+.book-btn.active .book-btn-svg :deep(path),
+.book-btn.active .book-btn-svg :deep(line),
+.book-btn.active .book-btn-svg :deep(circle),
+.book-btn.active .book-btn-svg :deep(rect),
+.book-btn.active .book-btn-svg :deep(polyline),
+.book-btn.active .book-btn-svg :deep(polygon) {
+  stroke: #fff;
+  animation: draw-stroke 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes draw-stroke {
+  0% {
+    stroke-dashoffset: var(--path-length, 1000);
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+.book-btn h2 {
+  line-height: 1.2;
+  font-size: var(--f-p);
+  transition: var(--tran);
+}
+.book-btn h2 span {
+  font-size: 10px;
+  color: var(--grey);
+  transition: var(--tran);
 }
 .tab-option-btn {
   font-size: var(--f-p);

@@ -476,6 +476,7 @@ const submitOrder = () => {
 .tab-main {
   width: 100%;
   height: 75vh;
+  max-height: 900px;
   background: var(--white);
   border-radius: 8px;
   overflow: scroll;
@@ -504,16 +505,18 @@ const submitOrder = () => {
   display: flex;
 }
 .tab-option {
- width: 65%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
+  width: 65%;
+  height: 100%;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
 }
 .tab-option-img {
   width: 90%;
   height: 50%;
+  max-height: 300px;
   background: var(--white);
   border-radius: 5px;
   margin: 20px;

@@ -22,12 +22,14 @@ useHead({
       img="/img/main-carts/print/1.svg"
       color="var(--blue)"
       hoverBg="var(--blue)"
+      link="/printing/scan/print"
     />
     <MainCarts
       title="Широкоформатная печать и сканирование"
       img="/img/main-carts/print/2.svg"
       color="var(--blue)"
       hoverBg="var(--blue)"
+      link="/printing/large/print"
     />
     <MainCarts
       title="Печать листовок и буклетов"
@@ -48,6 +50,7 @@ useHead({
       img="/img/main-carts/print/5.svg"
       color="var(--blue)"
       hoverBg="var(--blue)"
+      link="/printing/catalogs"
     />
     <MainCarts
       title="Печать наклеек и плотерная резка"
@@ -61,12 +64,14 @@ useHead({
       img="/img/main-carts/print/7.svg"
       color="var(--blue)"
       hoverBg="var(--blue)"
+      link="/printing/diplom"
     />
     <MainCarts
       title="Переплёт"
       img="/img/main-carts/print/8.svg"
       color="var(--blue)"
       hoverBg="var(--blue)"
+      link="/printing/bind/plastic"
     />
     <MainCarts
       title="Фальцовка"
@@ -98,12 +103,14 @@ useHead({
       img="/img/main-carts/print/13.svg"
       color="var(--blue)"
       hoverBg="var(--blue)"
+      link="/printing/replication"
     />
     <MainCarts
       title="Печать на кальке"
       img="/img/main-carts/print/14.svg"
       color="var(--blue)"
       hoverBg="var(--blue)"
+      link="/printing/tracing"
     />
   </div>
 </template>

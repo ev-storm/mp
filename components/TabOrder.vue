@@ -17,9 +17,13 @@ const props = withDefaults(
     formData: FormData;
     macketFileName: string;
     showDesignButton?: boolean;
+    showMacketButton?: boolean;
+    showOrderForm?: boolean;
   }>(),
   {
     showDesignButton: true,
+    showMacketButton: true,
+    showOrderForm: true,
   }
 );
 
@@ -90,6 +94,65 @@ const updateFormField = (field: keyof FormData, value: string) => {
   emit("update:formData", { ...props.formData, [field]: value });
 };
 
+// Функция для извлечения только цифр из строки
+const getDigits = (value: string): string => {
+  return value.replace(/\D/g, "");
+};
+
+// Функция для форматирования номера телефона в формат +7 999 999-99-99
+const formatPhone = (value: string): string => {
+  // Извлекаем только цифры
+  const digits = getDigits(value);
+
+  // Если пусто, возвращаем пустую строку
+  if (!digits) return "";
+
+  let phoneDigits = digits;
+
+  // Если начинается не с 7, добавляем 7 в начало
+  if (phoneDigits.length > 0 && phoneDigits[0] !== "7") {
+    phoneDigits = "7" + phoneDigits;
+  }
+
+  // СТРОГО ограничиваем до 11 цифр (7 + максимум 10 цифр после "+7")
+  phoneDigits = phoneDigits.slice(0, 11);
+
+  // Если только одна цифра "7", возвращаем "+7"
+  if (phoneDigits.length <= 1) {
+    return phoneDigits === "7" ? "+7" : "";
+  }
+
+  // Форматируем: +7 999 999-99-99
+  // Берем только цифры после "7" (максимум 10 цифр)
+  const digitsAfter7 = phoneDigits.slice(1); // Уже ограничено до 10 цифр
+
+  let formatted = "+7";
+
+  if (digitsAfter7.length > 0) {
+    formatted += " " + digitsAfter7.slice(0, 3);
+  }
+  if (digitsAfter7.length > 3) {
+    formatted += " " + digitsAfter7.slice(3, 6);
+  }
+  if (digitsAfter7.length > 6) {
+    formatted += "-" + digitsAfter7.slice(6, 8);
+  }
+  if (digitsAfter7.length > 8) {
+    formatted += "-" + digitsAfter7.slice(8, 10);
+  }
+
+  return formatted;
+};
+
+// Обработчик ввода телефона
+const handlePhoneInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+  const formatted = formatPhone(value);
+
+  updateFormField("phone", formatted);
+};
+
 const submitOrder = () => {
   emit("submit");
 };
@@ -103,7 +166,7 @@ const formatPrice = (price: number): string => {
 <template>
   <div class="tab-order">
     <div class="tab-order-name">
-      <h1>{{ title }}</h1>
+      <h1 v-html="title"></h1>
       <p v-if="subTitle" v-html="subTitle"></p>
     </div>
     <div class="tab-order-options">
@@ -129,7 +192,7 @@ const formatPrice = (price: number): string => {
     <div class="calc-order">
       <h1>{{ formatPrice(totalPrice) }} ₽</h1>
     </div>
-    <div class="tab-order-macket">
+    <div v-if="showMacketButton" class="tab-order-macket">
       <div class="macket-upload" :class="{ 'has-file': macketFileName }">
         <input
           type="file"
@@ -160,7 +223,7 @@ const formatPrice = (price: number): string => {
         <img src="/public/img/order/des.svg" alt="" />
       </button>
     </div>
-    <form class="form-order" @submit.prevent="submitOrder">
+    <form v-if="showOrderForm" class="form-order" @submit.prevent="submitOrder">
       <input
         :value="formData.name"
         @input="
@@ -171,11 +234,10 @@ const formatPrice = (price: number): string => {
       />
       <input
         :value="formData.phone"
-        @input="
-          updateFormField('phone', ($event.target as HTMLInputElement).value)
-        "
+        @input="handlePhoneInput"
         type="tel"
         placeholder="Номер телефона *"
+        maxlength="16"
       />
       <input
         :value="formData.email"
@@ -194,7 +256,7 @@ const formatPrice = (price: number): string => {
 .tab-order {
   width: 35%;
   height: 100%;
-  min-height: 600px;
+  max-height: 800px;
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
@@ -208,6 +270,7 @@ const formatPrice = (price: number): string => {
   font-size: 25px;
   margin-bottom: 10px;
   font-weight: 600;
+  line-height: normal;
 }
 
 .tab-order-options {

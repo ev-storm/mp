@@ -1,0 +1,96 @@
+<script setup lang="ts">
+import { ref } from "vue";
+
+// Контент для подробного описания
+const detailContent = ref(`
+  <p>Ризограф (или дупликатор) — это цифровое печатающее устройство для быстрого и недорогого тиражирования больших объемов документов (от сотен до десятков тысяч копий). Он использует технологию трафаретной печати: сканирует оригинал, создает мастер-пленку с микро-отверстиями, которая затем закрепляется на вращающемся барабане, пропускает через себя краску и переносит изображение на бумагу. Это позволяет печатать ярко, экономично, работать с разными видами бумаги, но многоцветная печать требует смены барабанов для каждого цвета.   <br><br></p>
+`);
+const detailContent2 = ref(`
+	<p><span style="color:var(--black);font-weight:600;">Как работает ризограф</span><br>
+Сканирование: Оригинал помещается в сканер.<br>
+Создание мастера: Термоголовка прожигает в мастер-пленке микро-отверстия, формируя трафарет.<br>
+Печать: Мастер-пленка на барабане, через которую проходит краска, прижимается к бумаге.<br>
+Вывод: Готовые копии поступают в лоток, а мастер-пленка утилизируется. <br>
+<br><br>
+<span style="color:var(--black);font-weight:600;>Преимущества<br></span>
+Низкая стоимость копии: Идеален для больших тиражей, так как себестоимость одного оттиска очень низкая.<br>
+Скорость: Быстро печатает большие партии.<br>
+Яркие цвета: Дает насыщенные цвета, особенно в монохромном режиме.<br>
+Гибкость: Работает с различной бумагой (даже тонкой) и имеет функции масштабирования.<br>
+<br><br>
+<span style="color:var(--black);font-weight:600;>Применение<br></span>
+Рекламные листовки, буклеты, бланки, методички.<br>
+Медицинские справки, рецепты, больничные карточки.<br>
+Учебные материалы, техническая документация.<br>
+<br><br>
+<span style="color:var(--black);font-weight:600;">Особенности<br></span>
+Краска: На основе соевого или рисового масла, не всегда полностью высыхает, может оставлять следы.<br>
+Цвет: Каждый цвет печатается отдельным прогоном, но есть модели с двумя барабанами для двухцветной печати.<br>
+Качество: Не идеально для фотографий, но превосходно для текстов и графики<br>`);
+</script>
+
+<template>
+  <div class="main-content-con">
+    <div class="main-content">
+      <div class="tab-con">
+        <div class="tab-btn-con">
+          <NuxtLink
+            to="/printing/tracing"
+            class="tab-btn"
+            :class="{
+              active: $route.path === '/printing/tracing',
+            }"
+          >
+            Печать на кальке
+          </NuxtLink>
+
+          <NuxtLink
+            to="/printing/tracing/more"
+            class="tab-btn"
+            :class="{
+              active: $route.path === '/printing/tracing/more',
+            }"
+          >
+            Подробнее
+          </NuxtLink>
+        </div>
+        <PageDetail
+          title="Печать на кальке"
+          :content="detailContent"
+          :content2="detailContent2"
+          image="/img/tracing/2.png"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.tab-main {
+  width: 100%;
+  height: 75vh;
+  background: var(--white);
+  border-radius: 8px;
+  overflow: scroll;
+}
+.tab-btn {
+  border-style: none;
+  font-size: var(--f-p);
+  background: var(--white);
+  border-radius: 5px;
+  margin-right: 30px;
+  margin-bottom: 10px;
+  padding: 4px 20px;
+  cursor: pointer;
+  color: var(--grey);
+  transition: var(--tran);
+}
+.tab-btn-con {
+  height: 5vh;
+}
+.tab-btn.active {
+  scale: 1.04;
+  color: var(--blue);
+  box-shadow: #00000015 0 5px 10px;
+}
+</style>

@@ -2,7 +2,9 @@
   <header class="header">
     <div class="header-con">
       <div class="logo-con">
-        <img src="/assets/svg/logo.svg" alt="" />
+        <NuxtLink to="/">
+          <img src="/assets/svg/logo.svg" alt="" />
+        </NuxtLink>
         <h1>Митино<br />Принт</h1>
       </div>
       <div class="header-link-con">
@@ -99,7 +101,7 @@
                 :style="{
                   '--category-color': getCategoryColor(item.categoryKey),
                 }"
-                @mousedown.prevent="selectItem(item)"
+                @mousedown.prevent="handleItemClick(item)"
                 @mouseenter="selectedIndex = index"
               >
                 <span class="search-result-text">{{ item.text }}</span>
@@ -136,8 +138,10 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useMenuSearch } from "~/composables/useMenuSearch";
 
-// @ts-ignore - useRoute is auto-imported by Nuxt
+// @ts-ignore - useRoute and useRouter are auto-imported by Nuxt
 const route = useRoute();
+// @ts-ignore
+const router = useRouter();
 
 const isSearchFocused = ref(false);
 const isAboutMenuOpen = ref(false);
@@ -179,9 +183,27 @@ const onSearchBlur = () => {
   }, 150);
 };
 
-const onEnter = () => {
-  selectFirstOrHighlighted();
+const navigateToItem = (item: any) => {
+  if (item.link) {
+    router.push(item.link);
+  } else {
+    router.push("/");
+  }
   searchInputValue.value = "";
+  closeDropdown();
+};
+
+const onEnter = () => {
+  const items = filteredItems.value;
+  if (items.length > 0) {
+    const index = selectedIndex.value >= 0 ? selectedIndex.value : 0;
+    navigateToItem(items[index]);
+  }
+};
+
+const handleItemClick = (item: any) => {
+  selectItem(item);
+  navigateToItem(item);
 };
 
 const toggleAboutMenu = () => {
@@ -316,6 +338,131 @@ const breadcrumbMap: Record<string, Breadcrumb> = {
     third: "Дополнительно",
     thirdLink: "/printing/lamination/more",
   },
+  // Тиражирование на ризографе
+  "/printing/replication": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Тиражирование на ризографе",
+    subLink: "/printing/replication",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/replication/more": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Тиражирование на ризографе",
+    subLink: "/printing/replication",
+    third: "Дополнительно",
+    thirdLink: "/printing/replication/more",
+  },
+  // Печать на кальке
+  "/printing/tracing": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Печать на кальке",
+    subLink: "/printing/tracing",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/tracing/more": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Печать на кальке",
+    subLink: "/printing/tracing",
+    third: "Дополнительно",
+    thirdLink: "/printing/tracing/more",
+  },
+  // Печать и сканирование до А3
+  "/printing/scan": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Сканирование документа до А3",
+    subLink: "/printing/scan",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/scan/print": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Печать и копирование до А3",
+    subLink: "/printing/scan/print",
+    third: "",
+    thirdLink: "",
+  },
+  // Широкоформатная печать и сканирование
+  "/printing/large/print": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Широкоформатная печать",
+    subLink: "/printing/large/print",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/large/scan": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Широкоформатное сканирование",
+    subLink: "/printing/large/scan",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/large/plan": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Печать чертежей",
+    subLink: "/printing/large/plan",
+    third: "",
+    thirdLink: "",
+  },
+  // Переплет
+  "/printing/bind/metal": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Переплет на металлическую пружину",
+    subLink: "/printing/bind/metal",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/bind/plastic": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Переплет на пластиковую пружину",
+    subLink: "/printing/bind/plastic",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/bind/hard": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Твердый переплет",
+    subLink: "/printing/bind/hard",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/diplom": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Печать курсовых и дипломных работ",
+    subLink: "/printing/diplom",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/catalogs": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Печать листовок и буклетов",
+    subLink: "/printing/catalogs",
+    third: "",
+    thirdLink: "",
+  },
+  "/printing/catalogs/ofset": {
+    main: "Типография",
+    mainLink: "/printing",
+    sub: "Печать листовок и буклетов",
+    subLink: "/printing/catalogs",
+    third: "Офсетная печать",
+    thirdLink: "/printing/catalogs/ofset",
+  },
   // Фотопечать
   "/photo": {
     main: "Фотопечать",
@@ -381,9 +528,21 @@ const breadcrumb = computed(() => {
   display: flex;
   align-items: center;
 }
+.logo-con a {
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.logo-con a:active {
+  transform: scale(0.98);
+}
+
 .logo-con img {
   width: 70px;
   margin: 10px 15px;
+  cursor: pointer;
+  display: block;
 }
 .logo-con h1 {
   display: flex;

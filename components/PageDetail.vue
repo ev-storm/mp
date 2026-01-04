@@ -28,11 +28,13 @@ const props = defineProps<{
   width: 100%;
   background: var(--white);
   border-radius: 8px;
-  padding: 40px 100px;
+  padding: 40px 10%;
   margin-bottom: 20px;
   display: flex;
   gap: 40px;
   flex-direction: column;
+  overflow: scroll;
+  height: 75vh;
 }
 .page-detail-content-con {
   display: flex;
