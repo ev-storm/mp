@@ -4,11 +4,10 @@
     <main>
       <div class="container">
         <LeftBar />
-        <MainCon />
+        <slot />
       </div>
     </main>
     <Footer />
-    <slot />
   </div>
 </template>
 

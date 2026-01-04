@@ -42,7 +42,8 @@ const isClicked = ref(false);
 // Определяем активную кнопку по текущему маршруту или по клику
 const isActive = computed(() => {
   const buttonRoute = routeMap[props.text];
-  const isCurrentRoute = buttonRoute && route.path === buttonRoute;
+  // Проверяем точное совпадение или вложенные маршруты
+  const isCurrentRoute = buttonRoute && route.path.startsWith(buttonRoute);
   return isCurrentRoute || isClicked.value;
 });
 

@@ -1,0 +1,556 @@
+<script setup lang="ts">
+import { reactive, computed, ref, watch, onMounted } from "vue";
+import type { OrderField } from "~/types/order-fields";
+import {
+  calculateTotalPrice,
+  getQuantityFromFields,
+} from "~/types/order-fields";
+
+definePageMeta({
+  key: (route) => route.fullPath,
+});
+
+useHead({
+  title: "Печать листовок и буклетов",
+  meta: [
+    {
+      name: "description",
+      content: "Плоттерная резка бумаги",
+    },
+  ],
+});
+
+// Конфигурация полей для буклетов
+const fields = reactive<OrderField[]>([
+  {
+    id: "paper",
+    type: "dropdown",
+    label: "Бумага",
+    placeholder: "Выберите вплотность бумаги",
+    options: [
+      { label: "80 г/м²", price: 0 },
+      { label: "115 г/м²", price: 5 },
+      { label: "130 г/м²", price: 10 },
+      { label: "150 г/м²", price: 15 },
+      { label: "170 г/м²", price: 20 },
+      { label: "200 г/м²", price: 25 },
+      { label: "250 г/м²", price: 35 },
+      { label: "300 г/м²", price: 45 },
+    ],
+    value: null,
+  },
+  {
+    id: "size-quantity",
+    type: "input",
+    label: "Размер",
+    placeholder: "Введите размер (мм)",
+    inputType: "text",
+    value: null,
+  },
+  {
+    id: "quantity",
+    type: "input",
+    label: "Тираж",
+    placeholder: "Введите количество",
+    inputType: "number",
+    min: 1,
+    value: null,
+  },
+]);
+
+// Активная кнопка буклета (индекс)
+const activeBookBtn = ref<number | null>(null);
+
+// SVG контейнеры для book-btn
+const bookBtnSvgRefs = ref<(HTMLElement | null)[]>([]);
+
+// Пути к SVG иконкам буклетов
+const bookBtnSvgPaths = [
+  "/img/book/btn/1.svg",
+  "/img/book/btn/2.svg",
+  "/img/book/btn/3.svg",
+  "/img/book/btn/4.svg",
+  "/img/book/btn/5.svg",
+  "/img/book/btn/6.svg",
+];
+
+// Загрузка SVG с подготовкой для анимации
+async function loadBookBtnSvg(container: HTMLElement | null, svgPath: string) {
+  if (!container) return;
+  try {
+    const response = await fetch(svgPath);
+    const svgText = await response.text();
+    container.innerHTML = svgText;
+
+    // Добавляем stroke-dasharray ко всем path
+    const paths = container.querySelectorAll(
+      "path, line, circle, rect, polyline, polygon"
+    );
+    paths.forEach((path) => {
+      const el = path as SVGGeometryElement;
+      if (el.getTotalLength) {
+        const length = el.getTotalLength();
+        el.style.strokeDasharray = `${length}`;
+        el.style.strokeDashoffset = "0";
+        el.style.setProperty("--path-length", `${length}`);
+      }
+    });
+  } catch (e) {
+    console.error("Failed to load SVG:", e);
+  }
+}
+
+// Функция для установки ref
+const setBookBtnSvgRef = (index: number) => (el: any) => {
+  bookBtnSvgRefs.value[index] = el;
+};
+
+// Загружаем все SVG при монтировании
+onMounted(() => {
+  bookBtnSvgRefs.value.forEach(
+    (container: HTMLElement | null, index: number) => {
+      const path = bookBtnSvgPaths[index];
+      if (path) {
+        loadBookBtnSvg(container, path);
+      }
+    }
+  );
+});
+
+// Маппинг кнопок буклета на опции сложения
+const bookBtnToFoldingMap: Record<number, string> = {
+  0: "Без сложения",
+  1: "1 фальц (пополам)",
+  2: "2 фальца (евробуклет)",
+  3: "2 фальца (гармошка)",
+  4: "3 фальца (гармошка)",
+  5: "4 фальца (гармошка)",
+};
+
+// Обратный маппинг: опция сложения -> индекс кнопки
+const foldingToBookBtnMap: Record<string, number> = {
+  "Без сложения": 0,
+  "1 фальц (пополам)": 1,
+  "2 фальца (евробуклет)": 2,
+  "2 фальца (гармошка)": 3,
+  "3 фальца (гармошка)": 4,
+  "4 фальца (гармошка)": 5,
+};
+
+// Выбор кнопки буклета
+const selectBookBtn = (index: number) => {
+  activeBookBtn.value = index;
+
+  // Находим поле folding и устанавливаем значение
+  const foldingFieldItem = fields.find((f: OrderField) => f.id === "folding");
+  if (foldingFieldItem && foldingFieldItem.type === "dropdown") {
+    const optionLabel = bookBtnToFoldingMap[index];
+    const option = foldingFieldItem.options.find(
+      (o: { label: string; price: number }) => o.label === optionLabel
+    );
+    if (option) {
+      foldingFieldItem.value = option;
+    }
+  }
+};
+
+// Следим за изменениями в dropdown "Сложение" для обратной синхронизации
+const foldingFieldComputed = computed(() =>
+  fields.find((f: OrderField) => f.id === "folding")
+);
+
+watch(
+  () =>
+    foldingFieldComputed.value?.type === "dropdown"
+      ? foldingFieldComputed.value.value
+      : null,
+  (newValue: { label: string; price: number } | null) => {
+    if (newValue && newValue.label) {
+      const btnIndex = foldingToBookBtnMap[newValue.label];
+      if (btnIndex !== undefined) {
+        activeBookBtn.value = btnIndex;
+      }
+    } else {
+      activeBookBtn.value = null;
+    }
+  },
+  { deep: true }
+);
+
+// Следим за изменениями в dropdown "Бумага" для автоактивации Биговки
+const paperFieldComputed = computed(() =>
+  fields.find((f: OrderField) => f.id === "paper")
+);
+const creasingFieldComputed = computed(() =>
+  fields.find((f: OrderField) => f.id === "creasing")
+);
+
+watch(
+  () =>
+    paperFieldComputed.value?.type === "dropdown"
+      ? paperFieldComputed.value.value
+      : null,
+  (newValue: { label: string; price: number } | null) => {
+    if (newValue && newValue.label) {
+      // Извлекаем число из label, например "200 г/м²" -> 200
+      const match = newValue.label.match(/(\d+)/);
+      if (match) {
+        const weight = parseInt(match[1], 10);
+        // Если плотность >= 200, активируем Биговку
+        if (weight >= 200 && creasingFieldComputed.value?.type === "toggle") {
+          creasingFieldComputed.value.value = true;
+        }
+      }
+    }
+  },
+  { deep: true }
+);
+
+// Заказать дизайн
+const isDesignActive = ref(false);
+const designPrice = 1500;
+
+// Вычисляем общую стоимость
+const totalPrice = computed(() => {
+  const quantity = getQuantityFromFields(fields);
+  return calculateTotalPrice(
+    fields,
+    quantity,
+    isDesignActive.value ? designPrice : 0
+  );
+});
+
+// Файл макета
+const macketFile = ref<File | null>(null);
+const macketFileName = ref("");
+
+const handleFileUpload = (file: File) => {
+  macketFile.value = file;
+  macketFileName.value = file.name;
+};
+
+const removeFile = () => {
+  macketFile.value = null;
+  macketFileName.value = "";
+};
+
+// Форма заказа
+const formData = reactive({
+  name: "",
+  phone: "",
+  email: "",
+});
+
+// Toast
+const showToast = ref(false);
+const toastMessage = ref("");
+
+const submitOrder = () => {
+  // Собираем все данные заказа
+  const orderData = {
+    productType: "Буклет",
+    printType: "Лазерная печать",
+    // Выбранные опции
+    options: fields.map((f: OrderField) => {
+      let displayValue: string | null = null;
+      let price = 0;
+
+      switch (f.type) {
+        case "dropdown":
+        case "select":
+          displayValue = f.value?.label || null;
+          price = f.value?.price || 0;
+          break;
+        case "toggle":
+          displayValue = f.value ? "Да" : "Нет";
+          price = f.value ? f.price : 0;
+          break;
+        case "input":
+          displayValue = f.value !== null ? String(f.value) : null;
+          break;
+      }
+
+      return {
+        id: f.id,
+        label: f.label,
+        value: displayValue,
+        price,
+      };
+    }),
+    // Дизайн
+    designActive: isDesignActive.value,
+    designPrice: isDesignActive.value ? designPrice : 0,
+    // Макет
+    macketFile: macketFile.value,
+    macketFileName: macketFileName.value || null,
+    // Контактные данные
+    contact: {
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+    },
+    // Итоговая цена
+    totalPrice: totalPrice.value,
+  };
+
+  console.log("Order data:", orderData);
+
+  // TODO: отправка данных на сервер
+
+  // Показываем уведомление
+  toastMessage.value = "Заказ отправлен!";
+  showToast.value = true;
+};
+</script>
+
+<template>
+  <div class="main-content-con">
+    <div class="main-content">
+      <div class="tab-con">
+        <div class="tab-btn-con">
+          <NuxtLink
+            to="/printing/stickers/stickers-print"
+            class="tab-btn"
+            :class="{
+              active: $route.path === '/printing/stickers/stickers-print',
+            }"
+          >
+            Печать наклеек
+          </NuxtLink>
+
+          <NuxtLink
+            to="/printing/stickers/plotter-paper"
+            class="tab-btn"
+            :class="{
+              active: $route.path === '/printing/stickers/plotter-paper',
+            }"
+          >
+            Плоттерная резка бумаги
+          </NuxtLink>
+        </div>
+        <div class="tab-main">
+          <div class="tab-option">
+            <div class="tab-option-img">
+              <img src="/public/img/stick/2.png" alt="" />
+            </div>
+            <TabOptionMain :fields="fields" />
+            <div class="tab-option-btn-con">
+              <button class="tab-option-btn">
+                Технические требования к макету
+              </button>
+              <button class="tab-option-btn">Примеры работ</button>
+              <button class="tab-option-btn">
+                Срок изготовления: <span>один рабочий день</span>
+              </button>
+            </div>
+          </div>
+          <TabOrder
+            title="Плоттерная резка бумаги"
+            subTitle="Плоттерная резка применима во многих направлениях. В частности, данная технология используется при изготовлении:<br>
+- Рекламных щитов и вывесок; <br>- Предупреждающих знаков; <br>- Информационных табличек; <br>- Наклеек для автотранспорта и оборудования;"
+            :fields="fields"
+            :is-design-active="isDesignActive"
+            :total-price="totalPrice"
+            :form-data="formData"
+            :macket-file-name="macketFileName"
+            @update:is-design-active="isDesignActive = $event"
+            @update:form-data="Object.assign(formData, $event)"
+            @file-upload="handleFileUpload"
+            @file-remove="removeFile"
+            @submit="submitOrder"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <Toast :message="toastMessage" :show="showToast" @close="showToast = false" />
+</template>
+
+<style scoped>
+.tab-main {
+  width: 100%;
+  height: 75vh;
+  background: var(--white);
+  border-radius: 8px;
+  overflow: scroll;
+}
+.tab-btn {
+  border-style: none;
+  font-size: var(--f-p);
+  background: var(--white);
+  border-radius: 5px;
+  margin-right: 30px;
+  margin-bottom: 10px;
+  padding: 4px 20px;
+  cursor: pointer;
+  color: var(--grey);
+  transition: var(--tran);
+}
+.tab-btn-con {
+  height: 5vh;
+}
+.tab-btn.active {
+  scale: 1.04;
+  color: var(--blue);
+  box-shadow: #00000015 0 5px 10px;
+}
+.tab-main {
+  display: flex;
+}
+.tab-option {
+  width: 65%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.tab-option-img {
+  width: 90%;
+  height: 50%;
+  background: var(--back);
+  overflow: hidden;
+  border-radius: 5px;
+  margin: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-option-img img {
+  height: 100%;
+}
+.tab-option-btn-con {
+  width: 90%;
+  height: 10%;
+  display: flex;
+  justify-content: start;
+}
+
+.book-btn-con {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+.book-btn {
+  width: 30%;
+  height: 45%;
+  transition: all 0.3s ease-in-out;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 20px;
+  justify-content: space-around;
+}
+.book-btn:hover {
+  background: var(--back);
+}
+
+.book-btn.active {
+  background: var(--blue);
+  box-shadow: #00000030 0px 5px 20px;
+  scale: 1.1;
+}
+.book-btn.active h2,
+.book-btn.active h2 span {
+  color: #fff;
+}
+
+/* SVG контейнер */
+.book-btn-svg {
+  height: 70%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.book-btn-svg :deep(svg) {
+  height: 100%;
+  width: auto;
+}
+.book-btn-svg :deep(path),
+.book-btn-svg :deep(line),
+.book-btn-svg :deep(circle),
+.book-btn-svg :deep(rect),
+.book-btn-svg :deep(polyline),
+.book-btn-svg :deep(polygon) {
+  stroke: var(--blue);
+  fill: none;
+  transition: stroke 0.1s ease-in-out;
+}
+
+/* Active состояние SVG с анимацией */
+.book-btn.active .book-btn-svg :deep(path),
+.book-btn.active .book-btn-svg :deep(line),
+.book-btn.active .book-btn-svg :deep(circle),
+.book-btn.active .book-btn-svg :deep(rect),
+.book-btn.active .book-btn-svg :deep(polyline),
+.book-btn.active .book-btn-svg :deep(polygon) {
+  stroke: #fff;
+  animation: draw-stroke 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes draw-stroke {
+  0% {
+    stroke-dashoffset: var(--path-length, 1000);
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+.book-btn h2 {
+  line-height: 1.2;
+  font-size: var(--f-p);
+  transition: var(--tran);
+}
+.book-btn h2 span {
+  font-size: 10px;
+  color: var(--grey);
+  transition: var(--tran);
+}
+.tab-option-btn {
+  font-size: var(--f-p);
+  margin: 10px 40px 0px 0;
+  text-align: start;
+  display: flex;
+  align-items: center;
+  border-style: none;
+  cursor: pointer;
+  transition: var(--tran);
+  background: transparent;
+}
+.tab-option-btn:active {
+  scale: 0.95;
+}
+.tab-option-btn:active:nth-child(3) {
+  scale: 1;
+}
+.tab-option-btn::before {
+  margin-right: 5px;
+  scale: 0.8;
+}
+.tab-option-btn:nth-child(1) {
+  color: var(--blue);
+}
+.tab-option-btn:nth-child(2) {
+  color: var(--green);
+}
+.tab-option-btn:nth-child(3) {
+  color: var(--black);
+}
+.tab-option-btn:nth-child(1)::before {
+  content: url(/public/img/tab-btn/mini/1.svg);
+}
+.tab-option-btn:nth-child(2)::before {
+  content: url(/public/img/tab-btn/mini/2.svg);
+}
+.tab-option-btn:nth-child(3)::before {
+  content: url(/public/img/tab-btn/mini/3.svg);
+}
+.tab-option-btn span {
+  color: var(--grey);
+}
+</style>

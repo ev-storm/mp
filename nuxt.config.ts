@@ -21,5 +21,7 @@ export default defineNuxtConfig({
       viewport: "width=device-width, initial-scale=1",
       link: [{ rel: "icon", type: "image/x-icon", href: "/fav.ico" }],
     },
+    // pageTransition отключен из-за бага с навигацией
+    // pageTransition: { name: "page", mode: "out-in" },
   },
 });
