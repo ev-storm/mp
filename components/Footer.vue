@@ -7,7 +7,7 @@
           <img src="/assets/svg/logo.svg" alt="" />
         </div> -->
         <div class="footer-company-name">
-          <h1>МИТИНО<br />ПРИНТ</h1>
+          <h1>МИТИНО<br />&nbsp;ПРИНТ</h1>
           <p>Типография «Митино-Принт»</p>
           <p class="year">2026</p>
         </div>
@@ -40,7 +40,7 @@
             <li>Портфолио</li>
             <li>Тех. требования</li>
             <li>Магазин</li>
-            <li>Политика конфиденциальности</li>
+            <li>Политика <br />конфиденциальности</li>
           </ul>
         </div>
         <div class="nav-column-marg"></div>
@@ -242,7 +242,7 @@ onMounted(() => {
   background-color: #5a8fd4;
 }
 .theme-con {
-  display: flex;
+  display: none;
   height: -webkit-fill-available;
   align-items: flex-end;
 }
@@ -296,5 +296,36 @@ onMounted(() => {
 
 .theme-switch input:checked + .slider:before {
   transform: translateX(16px);
+}
+
+@media (max-width: 799px) {
+  .footer {
+    padding: 20px;
+  }
+  .footer-container {
+    flex-direction: column;
+  }
+  .footer-logo-section {
+    width: 100%;
+  }
+  .footer-contact {
+    width: 100%;
+    align-items: flex-start;
+  }
+  .nav-column-marg {
+    display: none;
+  }
+  .nav-column {
+    margin: 0;
+    padding: 0;
+    width: 45%;
+  }
+  .footer-nav {
+    flex-wrap: wrap;
+    margin: 30px 0;
+  }
+  .footer-company-name h1 br {
+    display: none;
+  }
 }
 </style>

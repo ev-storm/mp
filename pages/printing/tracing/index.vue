@@ -214,68 +214,6 @@ const submitOrder = () => {
 </template>
 
 <style scoped>
-.tab-main {
-  width: 100%;
-  height: 75vh;
-  max-height: 900px;
-  background: var(--white);
-  border-radius: 8px;
-  overflow: scroll;
-}
-.tab-btn {
-  border-style: none;
-  font-size: var(--f-p);
-  background: var(--white);
-  border-radius: 5px;
-  margin-right: 30px;
-  margin-bottom: 10px;
-  padding: 4px 20px;
-  cursor: pointer;
-  color: var(--grey);
-  transition: var(--tran);
-}
-.tab-btn-con {
-  height: 5vh;
-}
-.tab-btn.active {
-  scale: 1.04;
-  color: var(--blue);
-  box-shadow: #00000015 0 5px 10px;
-}
-.tab-main {
-  display: flex;
-}
-.tab-option {
-  width: 65%;
-  height: 100%;
-  max-height: 800px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-}
-.tab-option-img {
-  width: 90%;
-  height: 50%;
-  max-height: 300px;
-  background: var(--back);
-  overflow: hidden;
-  border-radius: 5px;
-  margin: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.tab-option-img img {
-  height: 100%;
-}
-.tab-option-btn-con {
-  width: 90%;
-  height: 10%;
-  display: flex;
-  justify-content: start;
-}
-
 .book-btn-con {
   width: 100%;
   height: 100%;

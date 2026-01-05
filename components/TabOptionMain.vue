@@ -244,4 +244,12 @@ const props = defineProps<{
     opacity: 1;
   }
 }
+@media (max-width: 799px) {
+  .toggle-group {
+    width: 46%;
+  }
+  .input-group {
+    width: 46%;
+  }
+}
 </style>

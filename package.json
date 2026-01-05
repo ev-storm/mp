@@ -12,6 +12,10 @@
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
+    "@types/hammerjs": "^2.0.46",
     "nuxt": "^4.0.0"
+  },
+  "dependencies": {
+    "hammerjs": "^2.0.8"
   }
 }

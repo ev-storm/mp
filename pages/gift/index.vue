@@ -1,6 +1,6 @@
 <script setup>
 definePageMeta({
-  key: route => route.fullPath,
+  key: (route) => route.fullPath,
 });
 
 useHead({
@@ -50,12 +50,4 @@ useHead({
   </div>
 </template>
 
-<style scoped>
-.main-carts {
-  width: 40%;
-  max-width: 500px;
-  height: 200px;
-  margin: 10px;
-}
-</style>
-
+<style scoped></style>

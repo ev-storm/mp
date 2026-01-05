@@ -45,7 +45,7 @@ const menuItems: MenuItem[] = [
     text: "Печать листовок и буклетов",
     category: "Типография",
     categoryKey: "typography",
-    link: "/printing/catalogs",
+    link: "/printing/booklet/laser-print",
   },
   {
     id: "t6",

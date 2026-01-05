@@ -128,4 +128,20 @@ watch(() => props.img, loadSvg);
     stroke-dashoffset: 0;
   }
 }
+
+@media (max-width: 799px) {
+  .main-carts {
+    width: 100%;
+  }
+  .svg-icon {
+    width: 35%;
+    margin-left: 70%;
+  }
+  .svg-icon svg {
+    width: 80%;
+  }
+  .main-carts h2[data-v-aac3728f] {
+    margin-top: -10%;
+  }
+}
 </style>

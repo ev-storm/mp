@@ -8,135 +8,181 @@
         <h1>Митино<br />Принт</h1>
       </div>
       <div class="header-link-con">
-        <div class="header-link-up">
-          <ul>
-            <li>Магазин</li>
-            <li class="mi">|</li>
-            <li class="header-dropdown" @click="toggleAboutMenu">
-              О компании
-              <span
-                class="header-dropdown-arrow"
-                :class="{ open: isAboutMenuOpen }"
-                >›</span
-              >
-              <ul
-                class="header-dropdown-list"
-                :class="{ open: isAboutMenuOpen }"
-              >
-                <li>О компании</li>
-                <li>Контакты и адрес</li>
-                <li>Документация</li>
-                <li>Оплата и доставка</li>
-                <li>Вакансии</li>
-                <li>FAQ</li>
-              </ul>
-            </li>
-            <li class="mi">|</li>
-            <li>Портфолио</li>
-            <li class="mi">|</li>
-            <li>Тех. требования</li>
-          </ul>
-          <div class="header-link-up-contact-con">
-            <div class="header-link-up-contact">
-              <h1>8 495 794-81-15</h1>
-              <p>mitino-print@yandex.ru</p>
-            </div>
-            <img src="/assets/svg/mail.svg" alt="" />
-          </div>
-        </div>
-        <div
-          class="header-link-main"
-          :class="{ 'search-focused': isSearchFocused }"
+        <button
+          class="burger-menu-btn"
+          :class="{ open: isMobileMenuOpen }"
+          @click="toggleMobileMenu"
+          aria-label="Открыть меню"
         >
-          <MainButton
-            text="Типография"
-            svg-path="/img/main-btn/t.svg"
-            color="var(--blue)"
-          />
-          <MainButton
-            text="Фотопечать"
-            svg-path="/img/main-btn/f.svg"
-            color="var(--red)"
-          />
-          <MainButton
-            text="Сувениры"
-            svg-path="/img/main-btn/s.svg"
-            color="var(--orange)"
-          />
-          <MainButton
-            text="Издательство"
-            svg-path="/img/main-btn/i.svg"
-            color="var(--green)"
-          />
-          <MainButton
-            text="Гравюровка"
-            svg-path="/img/main-btn/g.svg"
-            color="var(--blue_2)"
-          />
-          <div class="search-container" ref="searchContainerRef">
-            <input
-              class="main-search"
-              type="search"
-              placeholder="Поиск"
-              v-model="searchInputValue"
-              @input="onSearchInput"
-              @focus="onSearchFocus"
-              @blur="onSearchBlur"
-              @keydown.down.prevent="navigateDown"
-              @keydown.up.prevent="navigateUp"
-              @keydown.enter.prevent="onEnter"
-              @keydown.escape="closeDropdown"
-            />
-            <div
-              class="search-dropdown"
-              :class="{
-                open: isSearchDropdownOpen && filteredItems.length > 0,
-              }"
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+      <div class="header-link-up">
+        <ul>
+          <li>Магазин</li>
+          <li class="mi">|</li>
+          <li class="header-dropdown" @click="toggleAboutMenu">
+            О компании
+            <span
+              class="header-dropdown-arrow"
+              :class="{ open: isAboutMenuOpen }"
+              >›</span
             >
-              <div
-                v-for="(item, index) in filteredItems"
-                :key="item.id"
-                class="search-result-item"
-                :class="{ selected: index === selectedIndex }"
-                :style="{
-                  '--category-color': getCategoryColor(item.categoryKey),
-                }"
-                @mousedown.prevent="handleItemClick(item)"
-                @mouseenter="selectedIndex = index"
-              >
-                <span class="search-result-text">{{ item.text }}</span>
-                <span class="search-result-category">{{ item.category }}</span>
-              </div>
-              <div
-                v-if="filteredItems.length === 0 && searchInputValue.trim()"
-                class="search-no-results"
-              >
-                Ничего не найдено
-              </div>
-            </div>
+            <ul class="header-dropdown-list" :class="{ open: isAboutMenuOpen }">
+              <li>О компании</li>
+              <li>Контакты и адрес</li>
+              <li>Документация</li>
+              <li>Оплата и доставка</li>
+              <li>Вакансии</li>
+              <li>FAQ</li>
+            </ul>
+          </li>
+          <li class="mi">|</li>
+          <li>Портфолио</li>
+          <li class="mi">|</li>
+          <li>Тех. требования</li>
+        </ul>
+        <div class="header-link-up-contact-con">
+          <div class="header-link-up-contact">
+            <h1>8 495 794-81-15</h1>
+            <p>mitino-print@yandex.ru</p>
+          </div>
+          <img src="/assets/svg/mail.svg" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="header-link-main"
+      :class="{ 'search-focused': isSearchFocused }"
+    >
+      <MainButton
+        text="Типография"
+        svg-path="/img/main-btn/t.svg"
+        color="var(--blue)"
+      />
+      <MainButton
+        text="Фотопечать"
+        svg-path="/img/main-btn/f.svg"
+        color="var(--red)"
+      />
+      <MainButton
+        text="Сувениры"
+        svg-path="/img/main-btn/s.svg"
+        color="var(--orange)"
+      />
+      <MainButton
+        text="Издательство"
+        svg-path="/img/main-btn/i.svg"
+        color="var(--green)"
+      />
+      <MainButton
+        text="Гравюровка"
+        svg-path="/img/main-btn/g.svg"
+        color="var(--blue_2)"
+      />
+      <div class="search-container" ref="searchContainerRef">
+        <input
+          class="main-search"
+          type="search"
+          placeholder="Поиск"
+          v-model="searchInputValue"
+          @input="onSearchInput"
+          @focus="onSearchFocus"
+          @blur="onSearchBlur"
+          @keydown.down.prevent="navigateDown"
+          @keydown.up.prevent="navigateUp"
+          @keydown.enter.prevent="onEnter"
+          @keydown.escape="closeDropdown"
+        />
+        <div
+          class="search-dropdown"
+          :class="{
+            open: isSearchDropdownOpen && filteredItems.length > 0,
+          }"
+        >
+          <div
+            v-for="(item, index) in filteredItems"
+            :key="item.id"
+            class="search-result-item"
+            :class="{ selected: index === selectedIndex }"
+            :style="{
+              '--category-color': getCategoryColor(item.categoryKey),
+            }"
+            @mousedown.prevent="handleItemClick(item)"
+            @mouseenter="selectedIndex = index"
+          >
+            <span class="search-result-text">{{ item.text }}</span>
+            <span class="search-result-category">{{ item.category }}</span>
+          </div>
+          <div
+            v-if="filteredItems.length === 0 && searchInputValue.trim()"
+            class="search-no-results"
+          >
+            Ничего не найдено
           </div>
         </div>
-        <div class="map">
-          <p v-if="breadcrumb">
-            <NuxtLink :to="breadcrumb.mainLink">{{ breadcrumb.main }}</NuxtLink>
-            <span v-if="breadcrumb.sub">|</span>
-            <NuxtLink v-if="breadcrumb.sub" :to="breadcrumb.subLink">{{
-              breadcrumb.sub
-            }}</NuxtLink>
-            <span v-if="breadcrumb.third">|</span>
-            <NuxtLink v-if="breadcrumb.third" :to="breadcrumb.thirdLink">{{
-              breadcrumb.third
-            }}</NuxtLink>
-          </p>
+      </div>
+    </div>
+    <div class="map">
+      <p v-if="breadcrumb">
+        <NuxtLink :to="breadcrumb.mainLink">{{ breadcrumb.main }}</NuxtLink>
+        <span v-if="breadcrumb.sub">|</span>
+        <NuxtLink v-if="breadcrumb.sub" :to="breadcrumb.subLink">{{
+          breadcrumb.sub
+        }}</NuxtLink>
+        <span v-if="breadcrumb.third">|</span>
+        <NuxtLink v-if="breadcrumb.third" :to="breadcrumb.thirdLink">{{
+          breadcrumb.third
+        }}</NuxtLink>
+      </p>
+    </div>
+
+    <!-- Мобильное меню -->
+    <div class="mobile-menu" :class="{ open: isMobileMenuOpen }">
+      <ul class="mobile-menu-list">
+        <li class="mobile-menu-item">Магазин</li>
+        <li class="mobile-menu-item mobile-menu-dropdown">
+          <div class="mobile-menu-title" @click="toggleMobileAboutMenu">
+            О компании
+            <span
+              class="mobile-menu-arrow"
+              :class="{ open: isMobileAboutMenuOpen }"
+              >›</span
+            >
+          </div>
+          <ul
+            class="mobile-menu-sublist"
+            :class="{ open: isMobileAboutMenuOpen }"
+          >
+            <li>О компании</li>
+            <li>Контакты и адрес</li>
+            <li>Документация</li>
+            <li>Оплата и доставка</li>
+            <li>Вакансии</li>
+            <li>FAQ</li>
+          </ul>
+        </li>
+        <li class="mobile-menu-item">Портфолио</li>
+        <li class="mobile-menu-item">Тех. требования</li>
+      </ul>
+      <div class="mobile-menu-contact">
+        <div class="mobile-menu-contact-info">
+          <h1>8 495 794-81-15</h1>
+          <p>mitino-print@yandex.ru</p>
         </div>
+        <img src="/assets/svg/mail.svg" alt="" />
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useMenuSearch } from "~/composables/useMenuSearch";
+import { useMobileMenuState } from "~/composables/useMobileMenuState";
 
 // @ts-ignore - useRoute and useRouter are auto-imported by Nuxt
 const route = useRoute();
@@ -145,8 +191,12 @@ const router = useRouter();
 
 const isSearchFocused = ref(false);
 const isAboutMenuOpen = ref(false);
+const isMobileAboutMenuOpen = ref(false);
 const searchContainerRef = ref<HTMLElement | null>(null);
 const searchInputValue = ref("");
+
+// Composable для синхронизации состояния мобильных меню
+const { isMobileMenuOpen, toggleMobileMenu } = useMobileMenuState();
 
 // Composable для поиска по меню
 const {
@@ -209,6 +259,17 @@ const handleItemClick = (item: any) => {
 const toggleAboutMenu = () => {
   isAboutMenuOpen.value = !isAboutMenuOpen.value;
 };
+
+const toggleMobileAboutMenu = () => {
+  isMobileAboutMenuOpen.value = !isMobileAboutMenuOpen.value;
+};
+
+// Закрываем подменю при закрытии мобильного меню
+watch(isMobileMenuOpen, (newValue: boolean) => {
+  if (!newValue) {
+    isMobileAboutMenuOpen.value = false;
+  }
+});
 
 // Закрытие меню при клике вне
 const handleClickOutside = (event: MouseEvent) => {
@@ -509,24 +570,28 @@ const breadcrumb = computed(() => {
 <style scoped>
 .header {
   width: 100%;
-  height: 13vh;
-  background-color: var(--back);
+  height: 15vh;
   position: fixed;
   top: 0;
   z-index: 100;
   padding: 0 0;
   display: flex;
   justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
 .header-con {
   max-width: 1800px;
   width: 100%;
   display: flex;
   justify-content: space-between;
+  background-color: var(--back);
 }
 .logo-con {
   display: flex;
   align-items: center;
+  margin-bottom: -3vh;
+  z-index: 10;
 }
 .logo-con a {
   display: inline-block;
@@ -539,8 +604,8 @@ const breadcrumb = computed(() => {
 }
 
 .logo-con img {
-  width: 70px;
-  margin: 10px 15px;
+  width: 60px;
+  margin: 0px 10px 0px 35px;
   cursor: pointer;
   display: block;
 }
@@ -548,7 +613,7 @@ const breadcrumb = computed(() => {
   display: flex;
   font-weight: 500;
   text-align: end;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.2;
   text-transform: uppercase;
 }
@@ -557,12 +622,12 @@ const breadcrumb = computed(() => {
   flex-direction: column;
   justify-content: end;
   align-items: end;
-  width: 85%;
+  width: fit-content;
 }
 .header-link-up {
   display: flex;
   align-items: center;
-  margin: 10px 15px;
+  margin: 0px 15px;
 }
 .header-link-up ul {
   display: flex;
@@ -590,8 +655,10 @@ const breadcrumb = computed(() => {
 }
 .header-link-main {
   display: flex;
-  justify-content: flex-start;
-  width: 80%;
+  width: 100%;
+  max-width: 1800px;
+  justify-content: flex-end;
+  background-color: var(--back);
 }
 .header-link-main input {
   font-size: var(--f-2);
@@ -632,7 +699,7 @@ const breadcrumb = computed(() => {
   transform: translateX(-50%);
   background: var(--white);
   border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: #00000010 0 2px 15px;
   margin-top: 10px;
   padding: 8px 0;
   min-width: 180px;
@@ -668,7 +735,10 @@ const breadcrumb = computed(() => {
   align-items: center;
 }
 .map {
-  margin-right: 15px;
+  margin: 0 15px;
+  width: 95%;
+  display: flex;
+  justify-content: flex-end;
 }
 .map p {
   font-size: 10px;
@@ -702,11 +772,17 @@ const breadcrumb = computed(() => {
   border-color: var(--blue);
 }
 
-/* Search container & dropdown */
 .search-container {
   position: relative;
-  width: 100%;
+  width: 10%;
   margin: 5px 15px;
+  transition: all 0.4s ease-in-out;
+  display: flex;
+  justify-content: center;
+}
+
+.search-container:has(.main-search:focus) {
+  width: 50%;
 }
 
 .search-container .main-search {
@@ -721,7 +797,7 @@ const breadcrumb = computed(() => {
   right: 0;
   background: var(--white);
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: #00000010 0 2px 15px;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -787,7 +863,278 @@ const breadcrumb = computed(() => {
     padding: 0;
     margin: 0;
   }
+}
+
+/* Бургер меню и скрытие header-link-up при ширине экрана меньше 800px */
+.burger-menu-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 10px 15px;
+  z-index: 101;
+}
+
+.burger-menu-btn span {
+  width: 100%;
+  height: 3px;
+  background-color: var(--black);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Анимация бургера в крестик */
+.burger-menu-btn.open span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.burger-menu-btn.open span:nth-child(2) {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.burger-menu-btn.open span:nth-child(3) {
+  transform: rotate(-45deg) translate(10px, -10px);
+}
+
+.mobile-menu {
+  display: none;
+}
+
+@media (max-width: 799px) {
+  .header {
+    width: 100vw;
+    height: 12vh;
+    background: var(--back);
+  }
+  .search-container .main-search {
+    background: var(--back);
+  }
+  .search-container:has(.main-search:focus) {
+    width: 100%;
+  }
+  .search-dropdown {
+    top: calc(100% + 20px);
+  }
+  .logo-con {
+    margin-bottom: 0vh;
+    z-index: 10;
+  }
+  .search-container {
+    position: relative;
+    transition: all 0.4s ease-in-out;
+    width: 20%;
+    margin: 5px;
+  }
+  .main-btn {
+    background: var(--white);
+    margin: 0;
+    padding: 2px 19px;
+    border-radius: 5px;
+    transition: all 0.4s ease;
+  }
+  .header-con {
+    max-width: 100vw;
+    align-items: center;
+    background: var(--back);
+  }
+  .map {
+    width: 90%;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  .header-link-main {
+    max-width: fit-content;
+    background: #ffffff;
+    width: 94vw;
+    min-width: 94vw;
+    border-radius: 5px;
+    justify-content: space-between;
+    box-shadow: #00000010 0 2px 15px;
+  }
+  .header-link-main.search-focused :deep(.main-btn) {
+    opacity: 0;
+    max-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  .header-link-up {
+    display: none !important;
+  }
+
+  .burger-menu-btn {
+    display: flex;
+  }
+
+  .header-link-con {
+    justify-content: flex-end;
+  }
+  .logo-con img {
+    width: 40px;
+    margin: 10px 15px;
+  }
+
+  /* Мобильное меню */
+  .mobile-menu {
+    display: flex;
+    position: fixed;
+    top: 20vh;
+    right: -100%;
+    width: 60%;
+    max-width: 400px;
+    height: fit-content;
+    min-height: 40vh;
+    background: var(--white);
+    box-shadow: #00000030 0 2px 15px;
+    z-index: 700;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    margin: 0 15px;
+    border-radius: 8px;
+  }
+
+  .mobile-menu.open {
+    right: 0;
+  }
+
+  .mobile-menu-close {
+    background: transparent;
+    border: none;
+    font-size: 32px;
+    color: var(--grey);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+  }
+
+  .mobile-menu-close:hover {
+    color: var(--blue);
+  }
+
+  .mobile-menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    padding: 10px 0;
+  }
+
+  .mobile-menu-item {
+    padding: 10px 20px;
+    font-size: var(--f-2);
+    color: var(--grey);
+    border-bottom: 1px solid var(--back);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-item:not(.mobile-menu-dropdown):hover {
+    background: var(--back);
+    color: var(--blue);
+  }
   .logo-con h1 {
+    font-weight: 500;
+    font-size: 16px;
+  }
+
+  .mobile-menu-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+
+  .mobile-menu-arrow {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+    color: var(--grey);
+  }
+
+  .mobile-menu-arrow.open {
+    transform: rotate(90deg);
+  }
+
+  .mobile-menu-sublist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+
+  .mobile-menu-sublist.open {
+    max-height: 400px;
+    opacity: 1;
+    padding-top: 10px;
+  }
+
+  .mobile-menu-sublist li {
+    padding: 10px 20px;
+    font-size: var(--f-2);
+    color: var(--grey);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-sublist li:hover {
+    background: var(--back);
+    color: var(--blue);
+  }
+
+  .mobile-menu-contact {
+    display: flex;
+    align-items: start;
+    padding: 20px;
+    border-top: 1px solid var(--back);
+    gap: 15px;
+  }
+
+  .mobile-menu-contact-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+  }
+
+  .mobile-menu-contact-info h1 {
+    font-weight: 500;
+    color: var(--blue);
+    line-height: 0.8;
+    font-size: var(--f-1);
+    margin: 0 0 8px 0;
+  }
+
+  .mobile-menu-contact-info p {
+    font-size: var(--f-p);
+    color: var(--grey);
+    margin: 0;
+  }
+
+  .mobile-menu-contact img {
+    width: 32px;
+    height: 32px;
+    margin-top: 4px;
+  }
+  .map {
     display: none;
   }
 }

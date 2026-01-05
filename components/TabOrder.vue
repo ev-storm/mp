@@ -161,13 +161,29 @@ const submitOrder = () => {
 const formatPrice = (price: number): string => {
   return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 };
+
+// Состояние для отслеживания развернут ли текст описания
+const isDescriptionExpanded = ref(false);
+
+const toggleDescription = () => {
+  isDescriptionExpanded.value = !isDescriptionExpanded.value;
+};
 </script>
 
 <template>
   <div class="tab-order">
     <div class="tab-order-name">
       <h1 v-html="title"></h1>
-      <p v-if="subTitle" v-html="subTitle"></p>
+      <div v-if="subTitle" class="tab-order-name-description">
+        <p v-html="subTitle" :class="{ expanded: isDescriptionExpanded }"></p>
+        <button
+          v-if="subTitle"
+          class="tab-order-name-more-btn"
+          @click="toggleDescription"
+        >
+          {{ isDescriptionExpanded ? "Свернуть" : "Подробнее" }}
+        </button>
+      </div>
     </div>
     <div class="tab-order-options">
       <template v-for="field in fields" :key="field.id">
@@ -273,6 +289,33 @@ const formatPrice = (price: number): string => {
   line-height: normal;
 }
 
+.tab-order-name-description {
+  position: relative;
+}
+
+.tab-order-name p {
+  font-size: var(--f-p);
+  line-height: 1.5;
+  color: var(--black);
+}
+
+.tab-order-name-more-btn {
+  display: none;
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: transparent;
+  border: none;
+  color: var(--blue);
+  font-size: var(--f-p);
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.tab-order-name-more-btn:hover {
+  color: var(--blue_2);
+}
+
 .tab-order-options {
   width: 100%;
   padding: 0;
@@ -352,7 +395,7 @@ const formatPrice = (price: number): string => {
 
 /* .tab-order-macket-des:hover {
   background: var(--green);
-} 
+}
 	.tab-order-macket-des:hover img {
   filter: brightness(0) invert(1);
 }
@@ -505,5 +548,34 @@ const formatPrice = (price: number): string => {
 .form-order input[type="submit"]:hover {
   color: var(--white);
   background: var(--blue);
+}
+@media (max-width: 799px) {
+  .tab-order {
+    width: 100%;
+    padding: 0 15px 50px 15px;
+  }
+  .tab-order-macket {
+    padding: 20px 0;
+  }
+  .tab-order-options {
+    justify-content: center;
+  }
+
+  .tab-order-name p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tab-order-name p.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+  }
+  .tab-order-name-more-btn {
+    display: inline-block;
+  }
 }
 </style>

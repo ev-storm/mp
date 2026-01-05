@@ -1,12 +1,16 @@
 <template>
-  <aside class="left-bar">
+  <aside class="left-bar" :class="{ open: isLeftBarOpen }">
     <ul class="menu-list">
       <li class="menu-item left-t">
         <div class="menu-title" @click="toggleMenu('typography')">
           Типография
           <span class="arrow" :class="{ open: openMenus.typography }">›</span>
         </div>
-        <ul class="submenu" :class="{ open: openMenus.typography }">
+        <ul
+          class="submenu"
+          :class="{ open: openMenus.typography }"
+          @click="handleSubmenuClick"
+        >
           <li
             data-menu-id="t1"
             :class="{ highlighted: highlightedItemId === 't1' }"
@@ -61,9 +65,9 @@
             :class="{ highlighted: highlightedItemId === 't5' }"
           >
             <NuxtLink
-              to="/printing/catalogs"
+              to="/printing/booklet/laser-print"
               :class="{
-                'active-parent': route.path.startsWith('/printing/catalogs'),
+                'active-parent': route.path.startsWith('/printing/booklet'),
               }"
               >Печать листовок и буклетов</NuxtLink
             >
@@ -241,7 +245,11 @@
           Фотопечать
           <span class="arrow" :class="{ open: openMenus.photoprint }">›</span>
         </div>
-        <ul class="submenu" :class="{ open: openMenus.photoprint }">
+        <ul
+          class="submenu"
+          :class="{ open: openMenus.photoprint }"
+          @click="handleSubmenuClick"
+        >
           <li
             data-menu-id="f1"
             :class="{ highlighted: highlightedItemId === 'f1' }"
@@ -305,7 +313,11 @@
           Сувениры
           <span class="arrow" :class="{ open: openMenus.souvenirs }">›</span>
         </div>
-        <ul class="submenu" :class="{ open: openMenus.souvenirs }">
+        <ul
+          class="submenu"
+          :class="{ open: openMenus.souvenirs }"
+          @click="handleSubmenuClick"
+        >
           <li
             data-menu-id="s1"
             :class="{ highlighted: highlightedItemId === 's1' }"
@@ -387,7 +399,11 @@
           Издательство
           <span class="arrow" :class="{ open: openMenus.publishing }">›</span>
         </div>
-        <ul class="submenu" :class="{ open: openMenus.publishing }">
+        <ul
+          class="submenu"
+          :class="{ open: openMenus.publishing }"
+          @click="handleSubmenuClick"
+        >
           <li
             data-menu-id="i1"
             :class="{ highlighted: highlightedItemId === 'i1' }"
@@ -438,7 +454,11 @@
           Гравировка
           <span class="arrow" :class="{ open: openMenus.engraving }">›</span>
         </div>
-        <ul class="submenu" :class="{ open: openMenus.engraving }">
+        <ul
+          class="submenu"
+          :class="{ open: openMenus.engraving }"
+          @click="handleSubmenuClick"
+        >
           <li
             data-menu-id="g1"
             :class="{ highlighted: highlightedItemId === 'g1' }"
@@ -522,17 +542,32 @@
       </li>
     </ul>
   </aside>
+  <button class="left-btn-mob" @click="toggleLeftBar">
+    <img
+      src="/img/search/arrow.svg"
+      alt="Меню"
+      class="arrow-icon"
+      :class="{ rotated: isLeftBarOpen }"
+    />
+  </button>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from "vue";
+import { ref, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useMenuSearch } from "~/composables/useMenuSearch";
+import { useMobileMenuState } from "~/composables/useMobileMenuState";
 
 // @ts-ignore - useRoute is auto-imported by Nuxt
 const route = useRoute();
 
 // Composable для поиска
 const { highlightedItemId, menuItems } = useMenuSearch();
+
+// Composable для синхронизации состояния мобильных меню
+const { isLeftBarOpen, toggleLeftBar, closeLeftBar } = useMobileMenuState();
+
+// Переменная для хранения экземпляра Hammer.js
+let hammerInstance: any = null;
 
 const openMenus = ref({
   typography: false,
@@ -541,6 +576,15 @@ const openMenus = ref({
   publishing: false,
   engraving: false,
 });
+
+const handleSubmenuClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  // Проверяем, что клик был по элементу li или его дочерним элементам (но не по divider)
+  const li = target.closest(".submenu li:not(.divider)");
+  if (li && window.innerWidth <= 799) {
+    closeLeftBar();
+  }
+};
 
 // Отслеживаем изменение highlightedItemId для открытия меню и скролла
 watch(highlightedItemId, async (newId: string | null) => {
@@ -609,6 +653,39 @@ watch(
 // При монтировании компонента открываем соответствующее меню
 onMounted(() => {
   openMenuByRoute(route.path);
+
+  // Инициализация Hammer.js для обработки свайпов (только на мобильных устройствах)
+  if (typeof window !== "undefined" && window.innerWidth <= 799) {
+    import("hammerjs").then((HammerModule) => {
+      const Hammer = HammerModule.default;
+      hammerInstance = new Hammer(document.body);
+      hammerInstance
+        .get("swipe")
+        .set({ direction: Hammer.DIRECTION_HORIZONTAL });
+
+      // Свайп вправо - открыть меню
+      hammerInstance.on("swiperight", () => {
+        if (!isLeftBarOpen.value) {
+          toggleLeftBar();
+        }
+      });
+
+      // Свайп влево - закрыть меню
+      hammerInstance.on("swipeleft", () => {
+        if (isLeftBarOpen.value) {
+          closeLeftBar();
+        }
+      });
+    });
+  }
+});
+
+// Очистка при размонтировании
+onUnmounted(() => {
+  if (hammerInstance) {
+    hammerInstance.destroy();
+    hammerInstance = null;
+  }
 });
 
 const toggleMenu = (menu: keyof typeof openMenus.value) => {
@@ -782,6 +859,9 @@ const toggleMenu = (menu: keyof typeof openMenus.value) => {
   color: var(--red);
   font-weight: 600;
 }
+.submenu li {
+  font-size: var(--f-2);
+}
 
 .left-s .submenu li.highlighted {
   background: linear-gradient(
@@ -822,6 +902,70 @@ const toggleMenu = (menu: keyof typeof openMenus.value) => {
   }
   100% {
     box-shadow: 0 0 0 0 transparent;
+  }
+}
+.left-btn-mob {
+  display: none;
+}
+
+@media (max-width: 799px) {
+  .left-bar {
+    position: fixed;
+    top: 17vh;
+    left: -100%;
+    height: 75vh;
+    width: 75%;
+    background: var(--white);
+    box-shadow: #00000030 0 2px 15px;
+    max-height: fit-content;
+    margin: 0 20px;
+    border-radius: 8px;
+    padding: 20px;
+    z-index: 500;
+    transition: left 0.3s ease;
+  }
+
+  .left-bar.open {
+    left: 0;
+  }
+
+  .left-btn-mob {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 600;
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .left-btn-mob:hover {
+    background: var(--blue_2);
+    transform: scale(1.05);
+  }
+
+  .left-btn-mob:active {
+    transform: scale(0.95);
+  }
+
+  .left-btn-mob .arrow-icon {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+  }
+
+  .left-btn-mob .arrow-icon.rotated {
+    transform: rotate(180deg);
   }
 }
 </style>

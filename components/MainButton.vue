@@ -120,4 +120,10 @@ const navigate = () => {
 .main-btn:active .svg-icon {
   filter: brightness(0) invert(1);
 }
+@media (max-width: 799px) {
+  .main-btn .svg-icon {
+    width: 25px;
+    height: 25px;
+  }
+}
 </style>

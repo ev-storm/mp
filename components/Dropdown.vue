@@ -116,9 +116,14 @@ onUnmounted(() => {
 .dropdown-btn span {
   color: var(--black);
   font-size: var(--f-p);
+  /* flex: 1;
+  min-width: 0; */
 }
 .dropdown-btn span.placeholder {
   color: var(--grey);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .dropdown-arrow {
   scale: 1.8;
@@ -167,5 +172,10 @@ onUnmounted(() => {
 .dropdown-list li.selected {
   background: var(--back);
   color: var(--blue);
+}
+@media (max-width: 799px) {
+  .dropdown {
+    width: 46%;
+  }
 }
 </style>
