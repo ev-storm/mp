@@ -71,15 +71,15 @@ const navigate = () => {
   border-radius: 5px;
   display: flex;
   align-items: center;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.5s ease;
   font-size: var(--f-2);
 }
 
 .main-btn h2 {
   margin: 0;
   color: var(--btn-color);
-  transition: color 0.2s ease-in-out, max-width 0.5s ease-in-out,
-    opacity 0.5s ease-in-out, padding 0.5s ease-in-out, margin 0.5s ease-in-out;
+  transition: color 0.2s ease, max-width 0.5s ease, opacity 0.5s ease,
+    padding 0.5s ease, margin 0.5s ease;
   white-space: nowrap;
   overflow: hidden;
   max-width: 200px;

@@ -37,8 +37,8 @@ watch(
   bottom: 30px;
   left: 30px;
   background: var(--blue);
-  color: #fff;
-  padding: 16px 28px;
+
+  padding: 10px 28px;
   border-radius: 8px;
   font-size: 15px;
   font-weight: 500;
@@ -48,6 +48,8 @@ watch(
 
 .toast p {
   margin: 0;
+  color: #fff;
+  font-size: var(--f-1);
 }
 
 .toast-enter-active {
@@ -80,4 +82,3 @@ watch(
   }
 }
 </style>
-

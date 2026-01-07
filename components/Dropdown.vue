@@ -111,7 +111,7 @@ onUnmounted(() => {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .dropdown-btn:hover {
-  background: #dedede;
+  background: #eaeaea;
 }
 .dropdown-btn span {
   color: var(--black);
@@ -162,15 +162,14 @@ onUnmounted(() => {
   color: var(--grey);
   font-size: var(--f-p);
   border-style: solid;
-  border-color: var(--white);
+  background: var(--white);
   border-width: 0 0 0px 0;
 }
 .dropdown-list li:hover {
-  background: #d4d4d4;
+  background: var(--back);
   color: var(--black);
 }
 .dropdown-list li.selected {
-  background: var(--back);
   color: var(--blue);
 }
 @media (max-width: 799px) {

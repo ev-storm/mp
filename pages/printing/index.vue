@@ -1,7 +1,7 @@
 <script setup>
 // Принудительное обновление страницы при переходе
 definePageMeta({
-  key: route => route.fullPath,
+  key: (route) => route.fullPath,
 });
 
 useHead({
@@ -116,4 +116,3 @@ useHead({
 </template>
 
 <style scoped></style>
-

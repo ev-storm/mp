@@ -1,0 +1,138 @@
+{
+  "grid": {
+    "columns": 4,
+    "rows": "unlimited"
+  },
+  "tiles": [
+    {
+      "type": "tile-con",
+      "children": [
+        {
+          "type": "tile",
+          "width": 2,
+          "height": 2,
+          "color": "blue",
+          "img": "/img/main-carts/print/white/3.svg",
+          "title": "Печать листовок и буклетов"
+        },
+        {
+          "type": "tile-sub-con",
+          "direction": "column",
+          "children": [
+            {
+              "type": "tile",
+              "width": 2,
+              "height": 1,
+              "color": "orange",
+              "img": "/img/main-carts/gift/white/5.svg",
+              "title": "Календари"
+            },
+            {
+              "type": "tile",
+              "width": 2,
+              "height": 1,
+              "color": "red",
+              "img": "/img/main-carts/photo/white/1.svg",
+              "title": "Фото на документы"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "tile-con",
+      "children": [
+        {
+          "type": "tile",
+          "width": 3,
+          "height": 1,
+          "color": "red",
+          "img": "/img/main-carts/photo/white/3.svg",
+          "title": "Сканирование пленок"
+        },
+        {
+          "type": "tile",
+          "width": 1,
+          "height": 1,
+          "color": "blue",
+          "img": "/img/main-carts/print/white/4.svg",
+          "title": "Печать визиток"
+        }
+      ]
+    },
+    {
+      "type": "tile-con",
+      "children": [
+        {
+          "type": "tile-sub-con",
+          "direction": "column",
+          "children": [
+            {
+              "type": "tile-sub-sub-con",
+              "children": [
+                {
+                  "type": "tile",
+                  "width": 2,
+                  "height": 1,
+                  "color": "blue",
+                  "img": "/img/main-carts/print/white/6.svg",
+                  "title": "Печать наклеек и плотерная резка"
+                },
+                {
+                  "type": "tile",
+                  "width": 1,
+                  "height": 1,
+                  "color": "orange",
+                  "img": "/img/main-carts/gift/white/2.svg",
+                  "title": "Кружки"
+                }
+              ]
+            },
+            {
+              "type": "tile-sub-sub-con",
+              "children": [
+                {
+                  "type": "tile",
+                  "width": 1,
+                  "height": 1,
+                  "color": "blue",
+                  "img": "/img/main-carts/print/white/13.svg",
+                  "title": "Тиражирование на ризографе"
+                },
+                {
+                  "type": "tile",
+                  "width": 2,
+                  "height": 1,
+                  "color": "green",
+                  "img": "/img/main-carts/publish/white/2.svg",
+                  "title": "Набор текста (в том числе рукописного)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "tile",
+          "width": 1,
+          "height": 2,
+          "color": "red",
+          "img": "/img/main-carts/photo/white/2.svg",
+          "title": "Печать фото"
+        }
+      ]
+    },
+    {
+      "type": "tile-con",
+      "children": [
+        {
+          "type": "tile",
+          "width": 4,
+          "height": 1,
+          "color": "blue",
+          "img": "/img/main-carts/print/white/1.svg",
+          "title": "Печать и сканирование до А3"
+        }
+      ]
+    }
+  ]
+}

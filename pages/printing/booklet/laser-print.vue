@@ -475,6 +475,7 @@ const submitOrder = () => {
 <style scoped>
 .tab-option-img {
   padding: 2%;
+  background: var(--white);
 }
 .book-btn-con {
   width: 100%;

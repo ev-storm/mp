@@ -1,4 +1,9 @@
-<script setup>
+<script setup lang="ts">
+import type { TileConfig } from "~/types/tiles";
+import tilesConfigData from "~/data/tiles-config.json";
+
+const tilesConfig = tilesConfigData as TileConfig;
+
 useHead({
   title: "Главная",
   meta: [
@@ -10,6 +15,8 @@ useHead({
 });
 </script>
 
-<template></template>
+<template>
+  <TileSystem :config="tilesConfig" />
+</template>
 
 <style scoped></style>

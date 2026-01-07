@@ -52,16 +52,14 @@ const detailContent2 = ref(`
           Подробнее
         </NuxtLink>
       </div>
+      <PageDetail
+        title="Ламинирование"
+        :content="detailContent"
+        :content2="detailContent2"
+        image="/img/lam/3.png"
+      />
     </div>
-
-    <PageDetail
-      title="Ламинирование"
-      :content="detailContent"
-      :content2="detailContent2"
-      image="/img/lam/3.png"
-    />
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

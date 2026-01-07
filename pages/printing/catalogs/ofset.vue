@@ -330,6 +330,10 @@ const submitOrder = () => {
   color: var(--grey);
   transition: var(--tran);
 }
+.tab-option-img img {
+  height: auto;
+  width: 100%;
+}
 .tab-option-btn {
   font-size: var(--f-p);
   margin: 10px 40px 0px 0;

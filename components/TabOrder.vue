@@ -175,13 +175,23 @@ const toggleDescription = () => {
     <div class="tab-order-name">
       <h1 v-html="title"></h1>
       <div v-if="subTitle" class="tab-order-name-description">
-        <p v-html="subTitle" :class="{ expanded: isDescriptionExpanded }"></p>
+        <div class="tab-order-name-text-wrapper">
+          <p v-html="subTitle" :class="{ expanded: isDescriptionExpanded }"></p>
+          <br />
+          <span
+            v-if="!isDescriptionExpanded"
+            class="tab-order-name-more-link"
+            @click="toggleDescription"
+          >
+            подробнее
+          </span>
+        </div>
         <button
-          v-if="subTitle"
+          v-if="isDescriptionExpanded"
           class="tab-order-name-more-btn"
           @click="toggleDescription"
         >
-          {{ isDescriptionExpanded ? "Свернуть" : "Подробнее" }}
+          Свернуть
         </button>
       </div>
     </div>
@@ -279,7 +289,7 @@ const toggleDescription = () => {
 }
 
 .tab-order-name {
-  padding: 20px 0;
+  padding: 20px 20px 20px 0;
 }
 
 .tab-order-name h1 {
@@ -293,10 +303,57 @@ const toggleDescription = () => {
   position: relative;
 }
 
+.tab-order-name-text-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
 .tab-order-name p {
   font-size: var(--f-p);
   line-height: 1.5;
-  color: var(--black);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  padding-right: 0;
+}
+
+.tab-order-name p.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+.tab-order-name p.expanded ~ .tab-order-name-more-link {
+  display: none;
+}
+
+.tab-order-name-more-link {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  color: var(--blue);
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--white) 15px,
+    var(--white) 100%
+  );
+  padding-left: 4px;
+  line-height: 1.5;
+  font-size: var(--f-p);
+  white-space: nowrap;
+}
+
+.tab-order-name-more-link:hover {
+  color: var(--blue_2);
 }
 
 .tab-order-name-more-btn {
@@ -561,19 +618,6 @@ const toggleDescription = () => {
     justify-content: center;
   }
 
-  .tab-order-name p {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .tab-order-name p.expanded {
-    display: block;
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-  }
   .tab-order-name-more-btn {
     display: inline-block;
   }

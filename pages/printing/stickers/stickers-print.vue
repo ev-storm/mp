@@ -277,6 +277,10 @@ const submitOrder = () => {
 .book-btn.active h2 span {
   color: #fff;
 }
+.tab-option-img img {
+  height: auto;
+  width: 100%;
+}
 
 /* SVG контейнер */
 .book-btn-svg {

@@ -47,7 +47,7 @@
         <div class="nav-column">
           <ul>
             <li>О компании</li>
-            <li>Контакты и адрес</li>
+            <li><NuxtLink to="/about/contacts">Контакты и адрес</NuxtLink></li>
             <li>Документация</li>
             <li>Оплата и доставка</li>
             <li>Вакансии</li>
@@ -74,16 +74,33 @@
         <div class="contact-email">mitino-print@yandex.ru</div>
         <div class="contact-address">Москва, Новотушинский проезд, дом 6к1</div>
         <div class="contact-hours">Режим работы: Пн-Пт 09:00 - 19:00</div>
-        <button class="contact-button">Написать</button>
+        <button class="contact-button" @click="openContactModal">
+          Написать
+        </button>
       </div>
     </div>
   </footer>
+
+  <ContactModal
+    :isOpen="isContactModalOpen"
+    @close="closeContactModal"
+    @submit="handleContactSubmit"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useContactModal } from "~/composables/useContactModal";
 
 const isDarkTheme = ref(false);
+const { isContactModalOpen, openContactModal, closeContactModal } =
+  useContactModal();
+
+const handleContactSubmit = (formData: any, file: File | null) => {
+  console.log("Contact form submitted:", formData, file);
+  // Здесь можно добавить логику отправки формы
+  closeContactModal();
+};
 
 const toggleTheme = (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -300,7 +317,7 @@ onMounted(() => {
 
 @media (max-width: 799px) {
   .footer {
-    padding: 20px;
+    padding: 60px 20px;
   }
   .footer-container {
     flex-direction: column;

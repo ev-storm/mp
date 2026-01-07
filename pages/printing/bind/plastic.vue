@@ -318,6 +318,12 @@ const submitOrder = () => {
   font-size: var(--f-p);
   transition: var(--tran);
 }
+.tab-option-img img {
+  width: 100%;
+  height: auto;
+  -o-object-fit: contain;
+  object-fit: contain;
+}
 .book-btn h2 span {
   font-size: 10px;
   color: var(--grey);

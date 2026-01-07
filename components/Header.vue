@@ -32,7 +32,9 @@
             >
             <ul class="header-dropdown-list" :class="{ open: isAboutMenuOpen }">
               <li>О компании</li>
-              <li>Контакты и адрес</li>
+              <li>
+                <NuxtLink to="/about/contacts">Контакты и адрес</NuxtLink>
+              </li>
               <li>Документация</li>
               <li>Оплата и доставка</li>
               <li>Вакансии</li>
@@ -49,7 +51,12 @@
             <h1>8 495 794-81-15</h1>
             <p>mitino-print@yandex.ru</p>
           </div>
-          <img src="/assets/svg/mail.svg" alt="" />
+          <img
+            src="/assets/svg/mail.svg"
+            alt=""
+            @click="openContactModal"
+            style="cursor: pointer"
+          />
         </div>
       </div>
     </div>
@@ -158,7 +165,7 @@
             :class="{ open: isMobileAboutMenuOpen }"
           >
             <li>О компании</li>
-            <li>Контакты и адрес</li>
+            <li><NuxtLink to="/about/contacts">Контакты и адрес</NuxtLink></li>
             <li>Документация</li>
             <li>Оплата и доставка</li>
             <li>Вакансии</li>
@@ -173,16 +180,28 @@
           <h1>8 495 794-81-15</h1>
           <p>mitino-print@yandex.ru</p>
         </div>
-        <img src="/assets/svg/mail.svg" alt="" />
+        <img
+          src="/assets/svg/mail.svg"
+          alt=""
+          @click="openContactModal"
+          style="cursor: pointer"
+        />
       </div>
     </div>
   </header>
+
+  <ContactModal
+    :isOpen="isContactModalOpen"
+    @close="closeContactModal"
+    @submit="handleContactSubmit"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useMenuSearch } from "~/composables/useMenuSearch";
 import { useMobileMenuState } from "~/composables/useMobileMenuState";
+import { useContactModal } from "~/composables/useContactModal";
 
 // @ts-ignore - useRoute and useRouter are auto-imported by Nuxt
 const route = useRoute();
@@ -194,6 +213,9 @@ const isAboutMenuOpen = ref(false);
 const isMobileAboutMenuOpen = ref(false);
 const searchContainerRef = ref<HTMLElement | null>(null);
 const searchInputValue = ref("");
+
+const { isContactModalOpen, openContactModal, closeContactModal } =
+  useContactModal();
 
 // Composable для синхронизации состояния мобильных меню
 const { isMobileMenuOpen, toggleMobileMenu } = useMobileMenuState();
@@ -262,6 +284,12 @@ const toggleAboutMenu = () => {
 
 const toggleMobileAboutMenu = () => {
   isMobileAboutMenuOpen.value = !isMobileAboutMenuOpen.value;
+};
+
+const handleContactSubmit = (formData: any, file: File | null) => {
+  console.log("Contact form submitted:", formData, file);
+  // Здесь можно добавить логику отправки формы
+  closeContactModal();
 };
 
 // Закрываем подменю при закрытии мобильного меню
@@ -576,7 +604,7 @@ const breadcrumb = computed(() => {
   z-index: 100;
   padding: 0 0;
   display: flex;
-  justify-content: center;
+  justify-content: start;
   align-items: center;
   flex-direction: column;
 }
@@ -586,6 +614,7 @@ const breadcrumb = computed(() => {
   display: flex;
   justify-content: space-between;
   background-color: var(--back);
+  padding-top: 15px;
 }
 .logo-con {
   display: flex;
@@ -643,6 +672,7 @@ const breadcrumb = computed(() => {
   flex-direction: column;
   align-items: end;
   margin: 0 15px 0 30px;
+  cursor: pointer;
 }
 .header-link-up-contact-con img {
   width: 40px;
@@ -735,10 +765,13 @@ const breadcrumb = computed(() => {
   align-items: center;
 }
 .map {
-  margin: 0 15px;
-  width: 95%;
+  margin: 0;
+  width: 100%;
   display: flex;
   justify-content: flex-end;
+  max-width: 1800px;
+  background: var(--back);
+  padding: 5px 30px;
 }
 .map p {
   font-size: 10px;
@@ -764,7 +797,7 @@ const breadcrumb = computed(() => {
   border-style: solid;
   border-width: 2px;
   border-color: transparent;
-  transition: var(--tran);
+  transition: all 0.4s ease;
 }
 .main-search:focus {
   width: 100%;
@@ -912,6 +945,7 @@ const breadcrumb = computed(() => {
     width: 100vw;
     height: 12vh;
     background: var(--back);
+    padding-top: 0;
   }
   .search-container .main-search {
     background: var(--back);

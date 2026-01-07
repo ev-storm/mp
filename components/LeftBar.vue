@@ -699,7 +699,7 @@ const toggleMenu = (menu: keyof typeof openMenus.value) => {
   width: 20%;
   background: var(--white);
   overflow-y: auto;
-  max-height: 1000px;
+  max-height: fit-content;
   margin: 0 20px;
   border-radius: 8px;
   padding: 20px;

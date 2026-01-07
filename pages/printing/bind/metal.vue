@@ -354,6 +354,12 @@ const submitOrder = () => {
   margin-right: 5px;
   scale: 0.8;
 }
+.tab-option-img img {
+  width: 100%;
+  height: auto;
+  -o-object-fit: contain;
+  object-fit: contain;
+}
 .tab-option-btn:nth-child(1) {
   color: var(--blue);
 }
