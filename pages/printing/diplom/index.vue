@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { reactive, computed, ref, watch, onMounted } from "vue";
+import { reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { OrderField } from "~/types/order-fields";
 import {
   calculateTotalPrice,
   getQuantityFromFields,
 } from "~/types/order-fields";
+import {
+  getOrderFieldsConfigSync,
+  getPageMeta,
+  type PageConfigKey,
+} from "~/config/order-fields-config";
 
 definePageMeta({
   key: (route) => route.fullPath,
@@ -20,49 +25,61 @@ useHead({
   ],
 });
 
-// Конфигурация полей для буклетов
-const fields = reactive<OrderField[]>([
-  {
-    id: "paper",
-    type: "dropdown",
-    label: "Бумага",
-    placeholder: "Выберите вплотность бумаги",
-    options: [
-      { label: "80 г/м²", price: 0 },
-      { label: "115 г/м²", price: 5 },
-      { label: "130 г/м²", price: 10 },
-      { label: "150 г/м²", price: 15 },
-      { label: "170 г/м²", price: 20 },
-      { label: "200 г/м²", price: 25 },
-      { label: "250 г/м²", price: 35 },
-      { label: "300 г/м²", price: 45 },
-    ],
-    value: null,
-  },
-  {
-    id: "format",
-    type: "dropdown",
-    label: "Формат",
-    placeholder: "Выберите формат",
-    options: [
-      { label: "А6 (105×148 мм)", price: 3 },
-      { label: "А5 (148×210 мм)", price: 5 },
-      { label: "А4 (210×297 мм)", price: 8 },
-      { label: "А3 (297×420 мм)", price: 15 },
-      { label: "Евро (99×210 мм)", price: 6 },
-    ],
-    value: null,
-  },
-  {
-    id: "quantity",
-    type: "input",
-    label: "Тираж",
-    placeholder: "Введите количество",
-    inputType: "number",
-    min: 1,
-    value: null,
-  },
-]);
+// Конфигурация полей из единого файла конфигурации
+const pageKey: PageConfigKey = "diplom";
+const fields = reactive<OrderField[]>(getOrderFieldsConfigSync(pageKey));
+
+// Функция для форматирования количества дней
+const formatProductionDays = (days: number | undefined): string => {
+  if (!days || days === 0) return "один рабочий день";
+  if (days === 1) return "один рабочий день";
+  if (days >= 2 && days <= 4) return `${days} рабочих дня`;
+  return `${days} рабочих дней`;
+};
+
+// Метаданные страницы (срок изготовления) - реактивные, обновляются динамически
+const productionDays = ref<number | undefined>(1);
+
+// Обновить метаданные из localStorage
+const updateProductionDays = () => {
+  const pageMeta = getPageMeta(pageKey);
+  const newValue = pageMeta.productionDays ?? 1;
+  if (productionDays.value !== newValue) {
+    productionDays.value = newValue;
+  }
+};
+
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
+// Вызываем при монтировании
+onMounted(() => {
+  updateProductionDays();
+  // Слушаем кастомное событие обновления метаданных (когда админ-панель сохраняет данные в той же вкладке)
+  window.addEventListener("pageMetaUpdated", updateProductionDays);
+  // Слушаем изменения в localStorage (когда админ-панель сохраняет данные в другой вкладке)
+  window.addEventListener("storage", (e) => {
+    if (e.key === "order-fields-meta") {
+      updateProductionDays();
+    }
+  });
+  // Также проверяем изменения при фокусе окна
+  window.addEventListener("focus", updateProductionDays);
+  // Периодическая проверка изменений (каждые 2 секунды)
+  intervalId = setInterval(updateProductionDays, 2000);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("pageMetaUpdated", updateProductionDays);
+  window.removeEventListener("storage", updateProductionDays);
+  window.removeEventListener("focus", updateProductionDays);
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
+
+const productionDaysText = computed(() =>
+  formatProductionDays(productionDays.value)
+);
 
 // Заказать дизайн
 const isDesignActive = ref(false);
@@ -99,59 +116,25 @@ const formData = reactive({
   email: "",
 });
 
-// Toast
-const showToast = ref(false);
-const toastMessage = ref("");
+const {
+  showToast,
+  toastMessage,
+  closeToast,
+  submitOrder: submitOrderFn,
+} = useOrderSubmit();
 
-const submitOrder = () => {
-  // Собираем все данные заказа
-  const orderData = {
+const submitOrder = async () => {
+  await submitOrderFn({
     productType: "Печать курсовых и дипломных работ",
-    printType: "Печать курсовых и дипломных работ",
-    options: fields.map((f: OrderField) => {
-      let displayValue: string | null = null;
-      let price = 0;
-
-      switch (f.type) {
-        case "dropdown":
-        case "select":
-          displayValue = f.value?.label || null;
-          price = f.value?.price || 0;
-          break;
-        case "toggle":
-          displayValue = f.value ? "Да" : "Нет";
-          price = f.value ? f.price : 0;
-          break;
-        case "input":
-          displayValue = f.value !== null ? String(f.value) : null;
-          break;
-      }
-
-      return {
-        id: f.id,
-        label: f.label,
-        value: displayValue,
-        price,
-      };
-    }),
-    designActive: isDesignActive.value,
-    designPrice: isDesignActive.value ? designPrice : 0,
+    printType: undefined,
+    fields,
+    isDesignActive: isDesignActive.value,
+    designPrice,
+    macketFileName: macketFileName.value,
     macketFile: macketFile.value,
-    macketFileName: macketFileName.value || null,
-    contact: {
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-    },
-    totalPrice: totalPrice.value,
-  };
-
-  console.log("Order data:", orderData);
-
-  // TODO: отправка данных на сервер
-
-  toastMessage.value = "Заказ отправлен!";
-  showToast.value = true;
+    formData,
+    totalPrice,
+  });
 };
 </script>
 
@@ -172,7 +155,7 @@ const submitOrder = () => {
               </button>
               <button class="tab-option-btn">Примеры работ</button>
               <button class="tab-option-btn">
-                Срок изготовления: <span>один рабочий день</span>
+                Срок изготовления: <span>{{ productionDaysText }}</span>
               </button>
             </div>
           </div>
@@ -196,7 +179,7 @@ const submitOrder = () => {
     </div>
   </div>
 
-  <Toast :message="toastMessage" :show="showToast" @close="showToast = false" />
+  <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
 </template>
 
 <style scoped>

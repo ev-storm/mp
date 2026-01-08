@@ -39,7 +39,6 @@ const emit = defineEmits<{
 const getFieldDisplayValue = (field: OrderField): string | null => {
   switch (field.type) {
     case "dropdown":
-    case "select":
       return field.value?.label || null;
     case "toggle":
       return field.value ? "Да" : null;
@@ -57,7 +56,6 @@ const getFieldDisplayValue = (field: OrderField): string | null => {
 const shouldShowField = (field: OrderField): boolean => {
   switch (field.type) {
     case "dropdown":
-    case "select":
       return field.value !== null;
     case "toggle":
       return field.value === true;
@@ -74,8 +72,8 @@ const handleFileUpload = (event: Event) => {
       alert("Пожалуйста, загрузите файл в формате PDF");
       return;
     }
-    if (file.size > 30 * 1024 * 1024) {
-      alert("Файл не должен превышать 30 МБ");
+    if (file.size > 2.5 * 1024 * 1024) {
+      alert("Файл не должен превышать 2.5 МБ");
       return;
     }
     emit("fileUpload", file);
@@ -153,7 +151,17 @@ const handlePhoneInput = (event: Event) => {
   updateFormField("phone", formatted);
 };
 
+const submitError = ref<string>("");
+
 const submitOrder = () => {
+  if (!props.formData.phone) {
+    submitError.value = "Пожалуйста, заполните телефон";
+    setTimeout(() => {
+      submitError.value = "";
+    }, 3000);
+    return;
+  }
+  submitError.value = "";
   emit("submit");
 };
 
@@ -200,8 +208,7 @@ const toggleDescription = () => {
         <p
           v-if="
             shouldShowField(field) ||
-            field.type === 'dropdown' ||
-            field.type === 'select'
+            field.type === 'dropdown'
           "
         >
           {{ field.label }}:
@@ -231,7 +238,7 @@ const toggleDescription = () => {
           for="macket-file"
           class="macket-btn"
           v-if="!macketFileName"
-          data-tooltip="Расширение файла pdf. Не более 30мб"
+          data-tooltip="Расширение файла pdf. Не более 2.5 МБ"
         >
           <img src="/public/img/order/maket.svg" alt="" />
         </label>
@@ -271,8 +278,11 @@ const toggleDescription = () => {
           updateFormField('email', ($event.target as HTMLInputElement).value)
         "
         type="email"
-        placeholder="Почта *"
+        placeholder="Почта"
       />
+      <div v-if="submitError" class="form-error">
+        {{ submitError }}
+      </div>
       <input type="submit" value="Отправить заказ" />
     </form>
   </div>
@@ -439,7 +449,7 @@ const toggleDescription = () => {
 .tab-order-macket-des {
   width: 40%;
   display: flex;
-  padding: 5px 20px;
+  padding: 2%;
   background: var(--white);
   border-radius: 8px;
   border-color: var(--green);
@@ -448,6 +458,9 @@ const toggleDescription = () => {
   transition: var(--tran);
   cursor: pointer;
   justify-content: center;
+}
+.tab-order-macket-des img {
+  width: 100%;
 }
 
 /* .tab-order-macket-des:hover {
@@ -482,7 +495,7 @@ const toggleDescription = () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 20px;
+  padding: 2%;
   background: var(--back);
   border-radius: 8px;
   cursor: pointer;
@@ -492,6 +505,9 @@ const toggleDescription = () => {
   width: 100%;
   justify-content: center;
   position: relative;
+}
+.macket-btn img {
+  width: 100%;
 }
 
 .macket-btn:hover {
@@ -606,6 +622,18 @@ const toggleDescription = () => {
   color: var(--white);
   background: var(--blue);
 }
+
+.form-error {
+  padding: 10px;
+  background: #fee;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  color: var(--red);
+  font-size: var(--f-p);
+  text-align: center;
+  margin: 4px 0;
+}
+
 @media (max-width: 799px) {
   .tab-order {
     width: 100%;

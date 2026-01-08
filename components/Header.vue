@@ -33,7 +33,11 @@
             <ul class="header-dropdown-list" :class="{ open: isAboutMenuOpen }">
               <li>О компании</li>
               <li>
-                <NuxtLink to="/about/contacts">Контакты и адрес</NuxtLink>
+                <NuxtLink
+                  to="/about/contacts"
+                  :class="{ active: route.path === '/about/contacts' }"
+                  >Контакты и адрес</NuxtLink
+                >
               </li>
               <li>Документация</li>
               <li>Оплата и доставка</li>
@@ -165,7 +169,13 @@
             :class="{ open: isMobileAboutMenuOpen }"
           >
             <li>О компании</li>
-            <li><NuxtLink to="/about/contacts">Контакты и адрес</NuxtLink></li>
+            <li>
+              <NuxtLink
+                to="/about/contacts"
+                :class="{ active: route.path === '/about/contacts' }"
+                >Контакты и адрес</NuxtLink
+              >
+            </li>
             <li>Документация</li>
             <li>Оплата и доставка</li>
             <li>Вакансии</li>
@@ -195,6 +205,7 @@
     @close="closeContactModal"
     @submit="handleContactSubmit"
   />
+  <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
 </template>
 
 <script setup lang="ts">
@@ -216,6 +227,13 @@ const searchInputValue = ref("");
 
 const { isContactModalOpen, openContactModal, closeContactModal } =
   useContactModal();
+
+const showToast = ref(false);
+const toastMessage = ref("");
+
+const closeToast = () => {
+  showToast.value = false;
+};
 
 // Composable для синхронизации состояния мобильных меню
 const { isMobileMenuOpen, toggleMobileMenu } = useMobileMenuState();
@@ -287,9 +305,8 @@ const toggleMobileAboutMenu = () => {
 };
 
 const handleContactSubmit = (formData: any, file: File | null) => {
-  console.log("Contact form submitted:", formData, file);
-  // Здесь можно добавить логику отправки формы
-  closeContactModal();
+  toastMessage.value = "Сообщение отправлено!";
+  showToast.value = true;
 };
 
 // Закрываем подменю при закрытии мобильного меню
@@ -588,6 +605,15 @@ const breadcrumbMap: Record<string, Breadcrumb> = {
     third: "",
     thirdLink: "",
   },
+  // О компании
+  "/about/contacts": {
+    main: "О компании",
+    mainLink: "/about",
+    sub: "Контакты",
+    subLink: "/about/contacts",
+    third: "",
+    thirdLink: "",
+  },
 };
 
 const breadcrumb = computed(() => {
@@ -759,6 +785,21 @@ const breadcrumb = computed(() => {
 .header-dropdown-list li:hover {
   background: var(--back);
   color: var(--blue);
+}
+
+.header-dropdown-list li a {
+  color: var(--grey);
+  transition: all 0.2s ease;
+}
+
+.header-dropdown-list li a.router-link-active:not(.active) {
+  color: var(--grey) !important;
+  font-weight: 400 !important;
+}
+
+.header-dropdown-list li a.active {
+  color: var(--blue) !important;
+  font-weight: 600 !important;
 }
 .search-map-con {
   display: flex;
@@ -1132,6 +1173,21 @@ const breadcrumb = computed(() => {
   .mobile-menu-sublist li:hover {
     background: var(--back);
     color: var(--blue);
+  }
+
+  .mobile-menu-sublist li a {
+    color: var(--grey);
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-sublist li a.router-link-active:not(.active) {
+    color: var(--grey) !important;
+    font-weight: 400 !important;
+  }
+
+  .mobile-menu-sublist li a.active {
+    color: var(--blue) !important;
+    font-weight: 600 !important;
   }
 
   .mobile-menu-contact {

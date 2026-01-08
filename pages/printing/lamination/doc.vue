@@ -93,65 +93,20 @@ const formData = reactive({
   email: "",
 });
 
-// Toast
-const showToast = ref(false);
-const toastMessage = ref("");
+const { showToast, toastMessage, closeToast, submitOrder: submitOrderFn } =
+  useOrderSubmit();
 
-const submitOrder = () => {
-  // Собираем все данные заказа
-  const orderData = {
-    productType: "Буклет",
-    printType: "Лазерная печать",
-    // Выбранные опции
-    options: fields.map((f: OrderField) => {
-      let displayValue: string | null = null;
-      let price = 0;
-
-      switch (f.type) {
-        case "dropdown":
-        case "select":
-          displayValue = f.value?.label || null;
-          price = f.value?.price || 0;
-          break;
-        case "toggle":
-          displayValue = f.value ? "Да" : "Нет";
-          price = f.value ? f.price : 0;
-          break;
-        case "input":
-          displayValue = f.value !== null ? String(f.value) : null;
-          break;
-      }
-
-      return {
-        id: f.id,
-        label: f.label,
-        value: displayValue,
-        price,
-      };
-    }),
-    // Дизайн
-    designActive: isDesignActive.value,
-    designPrice: isDesignActive.value ? designPrice : 0,
-    // Макет
+const submitOrder = async () => {
+  await submitOrderFn({
+    productType: "Ламинирование документов",
+    fields,
+    isDesignActive: isDesignActive.value,
+    designPrice,
+    macketFileName: macketFileName.value,
     macketFile: macketFile.value,
-    macketFileName: macketFileName.value || null,
-    // Контактные данные
-    contact: {
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-    },
-    // Итоговая цена
-    totalPrice: totalPrice.value,
-  };
-
-  console.log("Order data:", orderData);
-
-  // TODO: отправка данных на сервер
-
-  // Показываем уведомление
-  toastMessage.value = "Заказ отправлен!";
-  showToast.value = true;
+    formData,
+    totalPrice,
+  });
 };
 </script>
 
@@ -230,7 +185,7 @@ const submitOrder = () => {
     </div>
   </div>
 
-  <Toast :message="toastMessage" :show="showToast" @close="showToast = false" />
+  <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
 </template>
 
 <style scoped>

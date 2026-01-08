@@ -130,7 +130,8 @@ p {
   font-size: var(--f-p);
   line-height: 1.5;
 }
-span {
+.tab-option-btn span {
+  margin-left: 10px;
 }
 
 footer {

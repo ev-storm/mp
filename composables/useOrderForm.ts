@@ -64,7 +64,6 @@ export function useOrderForm(config: OrderFormConfig) {
 
         switch (f.type) {
           case "dropdown":
-          case "select":
             displayValue = f.value?.label || null;
             price = f.value?.price || 0;
             break;

@@ -27,14 +27,6 @@ export interface ToggleField extends BaseField {
   value: boolean;
 }
 
-// Select поле (dropdown для тиража с предустановленными значениями)
-export interface SelectField extends BaseField {
-  type: "select";
-  placeholder: string;
-  options: DropdownOption[];
-  value: DropdownOption | null;
-}
-
 // Input поле (для произвольного ввода)
 export interface InputField extends BaseField {
   type: "input";
@@ -46,7 +38,7 @@ export interface InputField extends BaseField {
 }
 
 // Объединённый тип для любого поля
-export type OrderField = DropdownField | ToggleField | SelectField | InputField;
+export type OrderField = DropdownField | ToggleField | InputField;
 
 // Хелпер для создания конфигурации
 export function createOrderConfig(fields: OrderField[]): OrderField[] {
@@ -64,7 +56,6 @@ export function calculateTotalPrice(
   for (const field of fields) {
     switch (field.type) {
       case "dropdown":
-      case "select":
         if (field.value) {
           sum += field.value.price;
         }
@@ -85,11 +76,6 @@ export function calculateTotalPrice(
 export function getQuantityFromFields(fields: OrderField[]): number {
   for (const field of fields) {
     if (field.id === "quantity" || field.id === "count") {
-      if (field.type === "select" && field.value) {
-        // Извлекаем число из label, например "100 шт." -> 100
-        const match = field.value.label.match(/(\d+)/);
-        return match ? parseInt(match[1], 10) : 1;
-      }
       if (field.type === "input" && field.value) {
         return typeof field.value === "number" ? field.value : parseInt(String(field.value), 10) || 1;
       }

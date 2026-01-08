@@ -18,15 +18,6 @@ const props = defineProps<{
         :options="field.options"
       />
 
-      <!-- Select (для тиража) -->
-      <Dropdown
-        v-else-if="field.type === 'select'"
-        v-model="field.value"
-        :label="field.label"
-        :placeholder="field.placeholder"
-        :options="field.options"
-      />
-
       <!-- Toggle -->
 
       <div v-else-if="field.type === 'toggle'" class="toggle-group">
@@ -64,12 +55,14 @@ const props = defineProps<{
 <style scoped>
 .tab-option-main {
   width: 90%;
+  height: -moz-fit-content;
   height: fit-content;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-content: space-around;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 0 5%;
 }
 
 /* Input group styles */

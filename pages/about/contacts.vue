@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 
 definePageMeta({
   key: (route) => route.fullPath,
@@ -13,10 +13,18 @@ useHead({
       content: "Контакты",
     },
   ],
+  script: [
+    {
+      src: "https://api-maps.yandex.ru/3.0/?apikey=2daa9fb2-779c-4369-b15e-8ba3c97897c5&lang=ru_RU",
+      async: true,
+    },
+  ],
 });
 
 const showToast = ref(false);
 const toastMessage = ref("");
+const mapContainer = ref<HTMLElement | null>(null);
+let map: any = null;
 
 const copyText = async (event: Event) => {
   const img = event.target as HTMLElement;
@@ -30,9 +38,38 @@ const copyText = async (event: Event) => {
   const textToCopy = span.textContent || "";
 
   try {
-    await navigator.clipboard.writeText(textToCopy);
-    toastMessage.value = "Текст скопирован";
-    showToast.value = true;
+    // Проверяем доступность Clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(textToCopy);
+      toastMessage.value = "Текст скопирован";
+      showToast.value = true;
+    } else {
+      // Fallback метод для старых браузеров или небезопасного контекста
+      const textArea = document.createElement("textarea");
+      textArea.value = textToCopy;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        const successful = document.execCommand("copy");
+        if (successful) {
+          toastMessage.value = "Текст скопирован";
+          showToast.value = true;
+        } else {
+          throw new Error("execCommand failed");
+        }
+      } catch (err) {
+        console.error("Ошибка копирования (fallback):", err);
+        toastMessage.value = "Ошибка копирования";
+        showToast.value = true;
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    }
   } catch (err) {
     console.error("Ошибка копирования:", err);
     toastMessage.value = "Ошибка копирования";
@@ -43,12 +80,111 @@ const copyText = async (event: Event) => {
 const closeToast = () => {
   showToast.value = false;
 };
+
+const initMap = async () => {
+  if (!mapContainer.value || typeof window === "undefined") return;
+
+  try {
+    // Ждем загрузки API
+    await (window as any).ymaps3.ready;
+
+    const {
+      YMap,
+      YMapDefaultSchemeLayer,
+      YMapDefaultFeaturesLayer,
+      YMapMarker,
+    } = (window as any).ymaps3;
+
+    // Координаты: г. Москва, Новотушинский проезд, дом 6к1
+    const coordinates = [37.38265, 55.837258];
+
+    // Создаем карту
+    map = new YMap(mapContainer.value, {
+      location: {
+        center: coordinates,
+        zoom: 16,
+      },
+    });
+
+    // Добавляем слои
+    map.addChild(new YMapDefaultSchemeLayer());
+    map.addChild(new YMapDefaultFeaturesLayer());
+
+    // Создаем кастомную иконку для маркера (будка)
+    const markerElement = document.createElement("div");
+    markerElement.innerHTML = `
+      <div style="
+        width: 30px;
+        height: 30px;
+        background: var(--blue);
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        position: relative;
+      ">
+        <div style="
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(45deg);
+        width: 20px;
+        height: 20px;
+				border-radius: 50%;
+					background:var(--white)
+        "></div>
+      </div>
+    `;
+    markerElement.style.cursor = "pointer";
+
+    // Добавляем маркер с кастомной иконкой
+    const marker = new YMapMarker(
+      {
+        coordinates: coordinates,
+        mapFollowsOnClick: false,
+      },
+      markerElement
+    );
+
+    map.addChild(marker);
+  } catch (error) {
+    console.error("Ошибка инициализации карты:", error);
+  }
+};
+
+onMounted(() => {
+  if (typeof window !== "undefined") {
+    // Проверяем, загружен ли уже API
+    if ((window as any).ymaps3) {
+      initMap();
+    } else {
+      // Ждем загрузки скрипта
+      const checkYmaps = setInterval(() => {
+        if ((window as any).ymaps3) {
+          clearInterval(checkYmaps);
+          initMap();
+        }
+      }, 100);
+
+      // Очищаем интервал через 10 секунд, если API не загрузился
+      setTimeout(() => {
+        clearInterval(checkYmaps);
+      }, 10000);
+    }
+  }
+});
+
+onUnmounted(() => {
+  if (map) {
+    map.destroy();
+    map = null;
+  }
+});
 </script>
 
 <template>
   <div class="contacts-con">
     <div class="main-contacts-con">
-      <div class="map-con"></div>
+      <div ref="mapContainer" class="map-con"></div>
       <div class="main-contacts">
         <h1>Контакты</h1>
         <div class="tel-con main-contacts-item">
@@ -145,9 +281,11 @@ const closeToast = () => {
 }
 .map-con {
   width: 60%;
+  height: 100%;
   background: var(--grey);
   overflow: hidden;
   border-radius: 8px;
+  position: relative;
 }
 .main-contacts {
   width: 35%;

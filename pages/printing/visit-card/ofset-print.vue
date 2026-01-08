@@ -155,56 +155,21 @@ const formData = reactive({
   email: "",
 });
 
-// Toast
-const showToast = ref(false);
-const toastMessage = ref("");
+const { showToast, toastMessage, closeToast, submitOrder: submitOrderFn } =
+  useOrderSubmit();
 
-const submitOrder = () => {
-  const orderData = {
+const submitOrder = async () => {
+  await submitOrderFn({
     productType: "Визитка",
     printType: "Офсетная печать",
-    options: fields.map((f: OrderField) => {
-      let displayValue: string | null = null;
-      let price = 0;
-
-      switch (f.type) {
-        case "dropdown":
-        case "select":
-          displayValue = f.value?.label || null;
-          price = f.value?.price || 0;
-          break;
-        case "toggle":
-          displayValue = f.value ? "Да" : "Нет";
-          price = f.value ? f.price : 0;
-          break;
-        case "input":
-          displayValue = f.value !== null ? String(f.value) : null;
-          break;
-      }
-
-      return {
-        id: f.id,
-        label: f.label,
-        value: displayValue,
-        price,
-      };
-    }),
-    designActive: isDesignActive.value,
-    designPrice: isDesignActive.value ? designPrice : 0,
+    fields,
+    isDesignActive: isDesignActive.value,
+    designPrice,
+    macketFileName: macketFileName.value,
     macketFile: macketFile.value,
-    macketFileName: macketFileName.value || null,
-    contact: {
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-    },
-    totalPrice: totalPrice.value,
-  };
-
-  console.log("Order data:", orderData);
-
-  toastMessage.value = "Заказ отправлен!";
-  showToast.value = true;
+    formData,
+    totalPrice,
+  });
 };
 </script>
 
@@ -273,7 +238,7 @@ const submitOrder = () => {
     </div>
   </div>
 
-  <Toast :message="toastMessage" :show="showToast" @close="showToast = false" />
+  <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
 </template>
 
 <style scoped>

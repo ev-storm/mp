@@ -26,6 +26,9 @@ const formData = ref<FormData>({
 
 const fileName = ref<string>("");
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const isSubmitting = ref(false);
+const submitError = ref<string>("");
+const submitSuccess = ref(false);
 
 // Функция для извлечения только цифр из строки
 const getDigits = (value: string): string => {
@@ -82,11 +85,27 @@ const handleFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
     const file = target.files[0];
-    if (file.size > 30 * 1024 * 1024) {
-      alert("Файл не должен превышать 30 МБ");
+    
+    // Проверка типа файла (опционально, можно убрать если нужны любые файлы)
+    // if (file.type !== "application/pdf") {
+    //   alert("Пожалуйста, загрузите файл в формате PDF");
+    //   target.value = "";
+    //   fileName.value = "";
+    //   return;
+    // }
+    
+    if (file.size > 2.5 * 1024 * 1024) {
+      alert("Файл не должен превышать 2.5 МБ");
+      // Сбрасываем input при ошибке
+      target.value = "";
+      fileName.value = "";
       return;
     }
+    
+    // Устанавливаем имя файла для отображения
     fileName.value = file.name;
+  } else {
+    fileName.value = "";
   }
 };
 
@@ -97,19 +116,96 @@ const removeFile = () => {
   }
 };
 
-const submitForm = () => {
-  const file = fileInputRef.value?.files?.[0] || null;
-  emit("submit", formData.value, file);
-  // Очистка формы после отправки
-  formData.value = {
-    name: "",
-    phone: "",
-    email: "",
-    comment: "",
-  };
-  fileName.value = "";
-  if (fileInputRef.value) {
-    fileInputRef.value.value = "";
+const submitForm = async () => {
+  // Валидация обязательных полей
+  if (!formData.value.phone) {
+    submitError.value = "Пожалуйста, заполните телефон";
+    setTimeout(() => {
+      submitError.value = "";
+    }, 3000);
+    return;
+  }
+
+  isSubmitting.value = true;
+  submitError.value = "";
+  submitSuccess.value = false;
+
+  try {
+    const file = fileInputRef.value?.files?.[0] || null;
+
+    // Конвертируем файл в base64, если он есть
+    let fileBase64 = null;
+    let fileName = null;
+    let fileMimeType = null;
+
+    if (file) {
+      fileName = file.name;
+      fileMimeType = file.type;
+      fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          // Убираем префикс "data:application/pdf;base64," или другой
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Используем прямой импорт константы вместо runtimeConfig для статической генерации
+    const { TELEGRAM_API_URL } = await import('~/config/telegram');
+    const apiUrl = TELEGRAM_API_URL;
+
+    if (!apiUrl) {
+      throw new Error("API URL не настроен");
+    }
+
+    // Отправляем данные на Yandex Cloud Function
+    const response = await $fetch(apiUrl, {
+      method: "POST",
+      body: {
+        name: formData.value.name,
+        phone: formData.value.phone,
+        email: formData.value.email,
+        comment: formData.value.comment,
+        fileName: fileName,
+        fileBase64: fileBase64,
+        fileMimeType: fileMimeType,
+      },
+    });
+
+    if (response.success) {
+      submitSuccess.value = true;
+      emit("submit", formData.value, file);
+
+      // Очистка формы после успешной отправки
+      setTimeout(() => {
+        formData.value = {
+          name: "",
+          phone: "",
+          email: "",
+          comment: "",
+        };
+        fileName.value = "";
+        if (fileInputRef.value) {
+          fileInputRef.value.value = "";
+        }
+        submitSuccess.value = false;
+        closeModal();
+      }, 1500);
+    }
+  } catch (error: any) {
+    console.error("Error submitting form:", error);
+    submitError.value =
+      error.data?.statusMessage ||
+      error.message ||
+      "Произошла ошибка при отправке. Попробуйте позже.";
+    setTimeout(() => {
+      submitError.value = "";
+    }, 5000);
+  } finally {
+    isSubmitting.value = false;
   }
 };
 
@@ -137,7 +233,7 @@ const closeModal = () => {
             placeholder="Номер телефона *"
             maxlength="16"
           />
-          <input v-model="formData.email" type="email" placeholder="Почта *" />
+          <input v-model="formData.email" type="email" placeholder="Почта" />
           <textarea
             v-model="formData.comment"
             placeholder="Комментарий"
@@ -155,6 +251,7 @@ const closeModal = () => {
               v-if="!fileName"
               for="contact-file"
               class="contact-modal-file-btn"
+              data-tooltip="Расширение файла pdf. Не более 2.5 МБ"
             >
               Прикрепить файл
             </label>
@@ -169,7 +266,17 @@ const closeModal = () => {
               </button>
             </div>
           </div>
-          <input type="submit" value="Отправить" />
+          <div v-if="submitError" class="form-error">
+            {{ submitError }}
+          </div>
+          <div v-if="submitSuccess" class="form-success">
+            Сообщение отправлено!
+          </div>
+          <input
+            type="submit"
+            :value="isSubmitting ? 'Отправка...' : 'Отправить'"
+            :disabled="isSubmitting"
+          />
         </form>
         <div class="modal-contact-con">
           <div class="modal-contact">
@@ -399,6 +506,31 @@ const closeModal = () => {
 
 .contact-modal-file-remove:hover {
   color: var(--red);
+}
+
+.form-error {
+  padding: 10px;
+  background: #fee;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  color: var(--red);
+  font-size: var(--f-p);
+  text-align: center;
+}
+
+.form-success {
+  padding: 10px;
+  background: #efe;
+  border: 1px solid var(--green);
+  border-radius: 4px;
+  color: var(--green);
+  font-size: var(--f-p);
+  text-align: center;
+}
+
+.form-order input[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .modal-contact-con {
   display: flex;

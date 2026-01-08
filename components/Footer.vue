@@ -47,7 +47,13 @@
         <div class="nav-column">
           <ul>
             <li>О компании</li>
-            <li><NuxtLink to="/about/contacts">Контакты и адрес</NuxtLink></li>
+            <li>
+              <NuxtLink
+                to="/about/contacts"
+                :class="{ active: route.path === '/about/contacts' }"
+                >Контакты и адрес</NuxtLink
+              >
+            </li>
             <li>Документация</li>
             <li>Оплата и доставка</li>
             <li>Вакансии</li>
@@ -86,20 +92,30 @@
     @close="closeContactModal"
     @submit="handleContactSubmit"
   />
+  <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useContactModal } from "~/composables/useContactModal";
 
+// @ts-ignore - useRoute is auto-imported by Nuxt
+const route = useRoute();
+
 const isDarkTheme = ref(false);
 const { isContactModalOpen, openContactModal, closeContactModal } =
   useContactModal();
 
+const showToast = ref(false);
+const toastMessage = ref("");
+
+const closeToast = () => {
+  showToast.value = false;
+};
+
 const handleContactSubmit = (formData: any, file: File | null) => {
-  console.log("Contact form submitted:", formData, file);
-  // Здесь можно добавить логику отправки формы
-  closeContactModal();
+  toastMessage.value = "Сообщение отправлено!";
+  showToast.value = true;
 };
 
 const toggleTheme = (event: Event) => {
@@ -204,6 +220,20 @@ onMounted(() => {
 
 .nav-column li:hover {
   color: var(--blue);
+}
+
+.nav-column li a {
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.nav-column li a.router-link-active:not(.active) {
+  color: inherit !important;
+}
+
+.nav-column li a.active {
+  color: var(--blue) !important;
+  font-weight: 600 !important;
 }
 
 .footer-contact {

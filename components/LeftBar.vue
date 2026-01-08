@@ -804,6 +804,7 @@ const toggleMenu = (menu: keyof typeof openMenus.value) => {
 .submenu li a {
   color: inherit;
   text-decoration: none;
+  font-size: 12px;
 }
 
 /* Active link styles */

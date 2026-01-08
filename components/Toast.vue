@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
-const props = defineProps<{
-  message: string;
-  show: boolean;
-  duration?: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    message: string;
+    show: boolean;
+    duration?: number;
+    type?: "success" | "error" | "info";
+  }>(),
+  {
+    type: "info",
+  }
+);
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -25,7 +31,7 @@ watch(
 
 <template>
   <Transition name="toast">
-    <div v-if="show" class="toast">
+    <div v-if="show" class="toast" :class="`toast-${type}`">
       <p>{{ message }}</p>
     </div>
   </Transition>
@@ -37,13 +43,24 @@ watch(
   bottom: 30px;
   left: 30px;
   background: var(--blue);
-
   padding: 10px 28px;
   border-radius: 8px;
   font-size: 15px;
   font-weight: 500;
   z-index: 9999;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.toast-success {
+  background: var(--green);
+}
+
+.toast-error {
+  background: var(--red);
+}
+
+.toast-info {
+  background: var(--blue);
 }
 
 .toast p {

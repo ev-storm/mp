@@ -1,0 +1,452 @@
+{
+  "tracing": [
+    {
+      "id": "format",
+      "type": "dropdown",
+      "label": "Формат тест",
+      "placeholder": "Выберите формат",
+      "options": [
+        {
+          "label": "А5 (148×210 мм)",
+          "price": 5
+        },
+        {
+          "label": "А4 (210×297 мм)",
+          "price": 8
+        },
+        {
+          "label": "А3 (297×420 мм)",
+          "price": 15
+        },
+        {
+          "label": "Евро (99×210 мм)",
+          "price": 6
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "color",
+      "type": "dropdown",
+      "label": "Цвет печати",
+      "placeholder": "Выберите цвет печати",
+      "options": [
+        {
+          "label": "Черно-белая",
+          "price": 0
+        },
+        {
+          "label": "Цветная",
+          "price": 50
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "quantity",
+      "type": "input",
+      "label": "Тираж",
+      "placeholder": "Введите количество",
+      "inputType": "number",
+      "min": 1,
+      "value": null
+    }
+  ],
+  "catalogs": [
+    {
+      "id": "paper",
+      "type": "dropdown",
+      "label": "Бумага тест",
+      "placeholder": "Выберите вплотность бумаги",
+      "options": [
+        {
+          "label": "80 г/м²",
+          "price": 898989
+        },
+        {
+          "label": "115 г/м²",
+          "price": 5
+        },
+        {
+          "label": "130 г/м²",
+          "price": 10
+        },
+        {
+          "label": "150 г/м²",
+          "price": 15
+        },
+        {
+          "label": "170 г/м²",
+          "price": 20
+        },
+        {
+          "label": "200 г/м²",
+          "price": 25
+        },
+        {
+          "label": "250 г/м²",
+          "price": 35
+        },
+        {
+          "label": "300 г/м²",
+          "price": 45
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "cover",
+      "type": "dropdown",
+      "label": "Вид обложки",
+      "placeholder": "Выберите тип обложки",
+      "options": [
+        {
+          "label": "прозрачный пластик",
+          "price": 0
+        },
+        {
+          "label": "матовый  пластик",
+          "price": 5
+        },
+        {
+          "label": "плотная бумага",
+          "price": 10
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "bind",
+      "type": "dropdown",
+      "label": "Тип крепления",
+      "placeholder": "Выберите тип переплета",
+      "options": [
+        {
+          "label": "скоба",
+          "price": 0
+        },
+        {
+          "label": "клеевое",
+          "price": 5
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "format",
+      "type": "dropdown",
+      "label": "Формат",
+      "placeholder": "Выберите формат",
+      "options": [
+        {
+          "label": "А6 (105×148 мм)",
+          "price": 3
+        },
+        {
+          "label": "А5 (148×210 мм)",
+          "price": 5
+        },
+        {
+          "label": "А4 (210×297 мм)",
+          "price": 8
+        },
+        {
+          "label": "А3 (297×420 мм)",
+          "price": 15
+        },
+        {
+          "label": "Евро (99×210 мм)",
+          "price": 6
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "quantity",
+      "type": "input",
+      "label": "Тираж",
+      "placeholder": "Введите количество",
+      "inputType": "number",
+      "min": 1,
+      "value": null
+    }
+  ],
+  "replication": [
+    {
+      "id": "format",
+      "type": "dropdown",
+      "label": "Формат",
+      "placeholder": "Выберите формат",
+      "options": [
+        {
+          "label": "А6 (105×148 мм)",
+          "price": 333333333
+        },
+        {
+          "label": "А5 (148×210 мм)",
+          "price": 5
+        },
+        {
+          "label": "А4 (210×297 мм)",
+          "price": 8
+        },
+        {
+          "label": "А3 (297×420 мм)",
+          "price": 15
+        },
+        {
+          "label": "Евро (99×210 мм)",
+          "price": 6
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "sides",
+      "type": "dropdown",
+      "label": "Стороны",
+      "placeholder": "Выберите стороны печати",
+      "options": [
+        {
+          "label": "Односторонняя",
+          "price": 0
+        },
+        {
+          "label": "Двусторонняя",
+          "price": 100
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "color-paper",
+      "type": "dropdown",
+      "label": "Цвет бумаги",
+      "placeholder": "Выберите цвет бумаги",
+      "options": [
+        {
+          "label": "Синий",
+          "price": 0
+        },
+        {
+          "label": "Красный",
+          "price": 100
+        },
+        {
+          "label": "Белый",
+          "price": 100
+        },
+        {
+          "label": "Желтый",
+          "price": 100
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "quantity",
+      "type": "input",
+      "label": "Тираж",
+      "placeholder": "Введите количество",
+      "inputType": "number",
+      "min": 1,
+      "value": null
+    }
+  ],
+  "scan": [
+    {
+      "id": "format",
+      "type": "dropdown",
+      "label": "Формат",
+      "placeholder": "Выберите формат",
+      "options": [
+        {
+          "label": "А6 (105×148 мм)",
+          "price": 3
+        },
+        {
+          "label": "А5 (148×210 мм)",
+          "price": 5
+        },
+        {
+          "label": "А4 (210×297 мм)",
+          "price": 8
+        },
+        {
+          "label": "А3 (297×420 мм)",
+          "price": 15
+        },
+        {
+          "label": "Евро (99×210 мм)",
+          "price": 6
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "color",
+      "type": "dropdown",
+      "label": "Цвет печати",
+      "placeholder": "Выберите цвет печати",
+      "options": [
+        {
+          "label": "Черно-белая",
+          "price": 0
+        },
+        {
+          "label": "Цветная",
+          "price": 50
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "quantity",
+      "type": "input",
+      "label": "Тираж",
+      "placeholder": "Введите количество",
+      "inputType": "number",
+      "min": 1,
+      "value": null
+    },
+    {
+      "id": "sides",
+      "type": "dropdown",
+      "label": "Стороны",
+      "placeholder": "Выберите стороны печати",
+      "options": [
+        {
+          "label": "Односторонняя",
+          "price": 0
+        },
+        {
+          "label": "Двусторонняя",
+          "price": 100
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "scan-type",
+      "type": "dropdown",
+      "label": "Вид сканирования",
+      "placeholder": "Cкорость сканирования",
+      "options": [
+        {
+          "label": "Автоподачик",
+          "price": 200
+        },
+        {
+          "label": "Потоковая",
+          "price": 100
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "TextVue",
+      "type": "toggle",
+      "label": "Разпознования текста",
+      "tooltip": "Разпознования текста...",
+      "price": 300,
+      "value": false
+    }
+  ],
+  "diplom": [
+    {
+      "id": "paper",
+      "type": "dropdown",
+      "label": "Бумага",
+      "placeholder": "Выберите вплотность бумаги",
+      "options": [
+        {
+          "label": "80 г/м²",
+          "price": 0
+        },
+        {
+          "label": "115 г/м²",
+          "price": 5
+        },
+        {
+          "label": "130 г/м²",
+          "price": 10
+        },
+        {
+          "label": "150 г/м²",
+          "price": 15
+        },
+        {
+          "label": "170 г/м²",
+          "price": 20
+        },
+        {
+          "label": "200 г/м²",
+          "price": 25
+        },
+        {
+          "label": "250 г/м²",
+          "price": 35
+        },
+        {
+          "label": "300 г/м²",
+          "price": 45
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "format",
+      "type": "dropdown",
+      "label": "Формат",
+      "placeholder": "Выберите формат",
+      "options": [
+        {
+          "label": "А6 (105×148 мм)",
+          "price": 3
+        },
+        {
+          "label": "А5 (148×210 мм)",
+          "price": 5
+        },
+        {
+          "label": "А4 (210×297 мм)",
+          "price": 8
+        },
+        {
+          "label": "А3 (297×420 мм)",
+          "price": 15
+        },
+        {
+          "label": "Евро (99×210 мм)",
+          "price": 6
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "quantity",
+      "type": "input",
+      "label": "Тираж",
+      "placeholder": "Введите количество",
+      "inputType": "number",
+      "min": 1,
+      "value": null
+    }
+  ],
+  "booklet-laser": [],
+  "booklet-ofset": [],
+  "visit-card-laser": [],
+  "visit-card-ofset": [],
+  "visit-card-uf": [],
+  "stickers-print": [],
+  "plotter-paper": [],
+  "bind-plastic": [],
+  "bind-metal": [],
+  "bind-hard": [],
+  "lamination-doc": [],
+  "lamination-large": [],
+  "large-print": [],
+  "large-scan": [],
+  "large-plan": [],
+  "scan-print": []
+}
