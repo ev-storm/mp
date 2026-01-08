@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { reactive, computed, ref, watch, onMounted } from "vue";
+import { reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { OrderField } from "~/types/order-fields";
 import {
   calculateTotalPrice,
   getQuantityFromFields,
 } from "~/types/order-fields";
+import {
+  getOrderFieldsConfigSync,
+  getPageMeta,
+  type PageConfigKey,
+} from "~/config/order-fields-config";
 
 definePageMeta({
   key: (route) => route.fullPath,
@@ -20,101 +25,100 @@ useHead({
   ],
 });
 
-// Конфигурация полей для буклетов
-const fields = reactive<OrderField[]>([
-  {
-    id: "paper",
-    type: "dropdown",
-    label: "Бумага",
-    placeholder: "Выберите вплотность бумаги",
-    options: [
-      { label: "80 г/м²", price: 0 },
-      { label: "115 г/м²", price: 5 },
-      { label: "130 г/м²", price: 10 },
-      { label: "150 г/м²", price: 15 },
-      { label: "170 г/м²", price: 20 },
-      { label: "200 г/м²", price: 25 },
-      { label: "250 г/м²", price: 35 },
-      { label: "300 г/м²", price: 45 },
-    ],
-    value: null,
-  },
-  {
-    id: "format",
-    type: "dropdown",
-    label: "Формат",
-    placeholder: "Выберите формат",
-    options: [
-      { label: "А6 (105×148 мм)", price: 3 },
-      { label: "А5 (148×210 мм)", price: 5 },
-      { label: "А4 (210×297 мм)", price: 8 },
-      { label: "А3 (297×420 мм)", price: 15 },
-      { label: "Евро (99×210 мм)", price: 6 },
-    ],
-    value: null,
-  },
-  {
-    id: "creasing",
-    type: "toggle",
-    label: "Биговка",
-    tooltip:
-      "Сложение листа по биговке при высокой плотности бумаги предотвращает трещины краски и обеспечивает точный, лёгкий фальц.",
-    price: 2,
-    value: false,
-  },
-  {
-    id: "folding",
-    type: "dropdown",
-    label: "Сложение",
-    placeholder: "Выберите",
-    options: [
-      { label: "Без сложения", price: 0 },
-      { label: "1 фальц (пополам)", price: 2 },
-      { label: "2 фальца (евробуклет)", price: 4 },
-      { label: "2 фальца (гармошка)", price: 4 },
-      { label: "3 фальца (гармошка)", price: 6 },
-      { label: "4 фальца (гармошка)", price: 8 },
-    ],
-    value: null,
-  },
+// Конфигурация полей из единого файла конфигурации
+const pageKey: PageConfigKey = "booklet-ofset";
+const fields = reactive<OrderField[]>(getOrderFieldsConfigSync(pageKey));
 
-  {
-    id: "quantity",
-    type: "input",
-    label: "Тираж",
-    placeholder: "Введите количество",
-    inputType: "number",
-    min: 1,
-    value: null,
-  },
+// Функция для форматирования количества дней
+const formatProductionDays = (days: number | undefined): string => {
+  if (!days || days === 0) return "один рабочий день";
+  if (days === 1) return "один рабочий день";
+  if (days >= 2 && days <= 4) return `${days} рабочих дня`;
+  return `${days} рабочих дней`;
+};
 
-  {
-    id: "perforation",
-    type: "toggle",
-    label: "Перфорация",
-    tooltip:
-      "Создание линии из мелких отверстий или просечек, которая облегчает аккуратный отрыв части листовки — например, купона, билета или талона.",
-    price: 3,
-    value: false,
-  },
+// Метаданные страницы (срок изготовления, описание) - реактивные, обновляются динамически
+const productionDays = ref<number | undefined>(1);
+const pageDescription = ref<string>("");
 
-  {
-    id: "lamination",
-    type: "dropdown",
-    label: "Ламинация",
-    placeholder: "Выберите вид ламинации",
-    options: [
-      { label: "Без ламинации", price: 0 },
-      { label: "Глянцевая 1 сторона", price: 3 },
-      { label: "Глянцевая 2 стороны", price: 5 },
-      { label: "Матовая 1 сторона", price: 3 },
-      { label: "Матовая 2 стороны", price: 5 },
-      { label: "Soft-touch 1 сторона", price: 8 },
-      { label: "Soft-touch 2 стороны", price: 15 },
-    ],
-    value: null,
-  },
-]);
+// Обновить метаданные из localStorage
+const updatePageMeta = () => {
+  const meta = getPageMeta(pageKey);
+  const newProductionDays = meta.productionDays ?? 1;
+  const newDescription = meta.description || "";
+  
+  if (productionDays.value !== newProductionDays) {
+    productionDays.value = newProductionDays;
+  }
+  if (pageDescription.value !== newDescription) {
+    pageDescription.value = newDescription;
+  }
+};
+
+// Обновить поля из конфигурации при изменении в localStorage
+const updateFields = () => {
+  const newFields = getOrderFieldsConfigSync(pageKey);
+  if (newFields.length !== fields.length || JSON.stringify(newFields) !== JSON.stringify(fields)) {
+    fields.splice(0, fields.length, ...newFields);
+  }
+};
+
+// Слушаем изменения конфигурации
+const handleConfigUpdate = (e?: StorageEvent) => {
+  if (!e || e.key === "order-fields-config") {
+    updateFields();
+  }
+  if (!e || e.key === "order-fields-meta") {
+    updatePageMeta();
+  }
+};
+
+// Слушаем кастомное событие обновления конфигурации
+const handlePageConfigUpdated = () => {
+  updateFields();
+  updatePageMeta();
+};
+
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  updatePageMeta();
+  updateFields();
+  window.addEventListener("storage", handleConfigUpdate);
+  window.addEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.addEventListener("focus", () => {
+    updateFields();
+    updatePageMeta();
+  });
+  intervalId = setInterval(() => {
+    updateFields();
+    updatePageMeta();
+  }, 2000);
+  
+  // Загружаем SVG для кнопок буклетов
+  bookBtnSvgRefs.value.forEach(
+    (container: HTMLElement | null, index: number) => {
+      const path = bookBtnSvgPaths[index];
+      if (path) {
+        loadBookBtnSvg(container, path);
+      }
+    }
+  );
+});
+
+onUnmounted(() => {
+  window.removeEventListener("storage", handleConfigUpdate);
+  window.removeEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.removeEventListener("focus", handleConfigUpdate);
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
+
+const productionDaysText = computed(() =>
+  formatProductionDays(productionDays.value)
+);
+
 
 // Активная кнопка буклета (индекс)
 const activeBookBtn = ref<number | null>(null);
@@ -164,16 +168,6 @@ const setBookBtnSvgRef = (index: number) => (el: any) => {
 };
 
 // Загружаем все SVG при монтировании
-onMounted(() => {
-  bookBtnSvgRefs.value.forEach(
-    (container: HTMLElement | null, index: number) => {
-      const path = bookBtnSvgPaths[index];
-      if (path) {
-        loadBookBtnSvg(container, path);
-      }
-    }
-  );
-});
 
 // Маппинг кнопок буклета на опции сложения
 const bookBtnToFoldingMap: Record<number, string> = {
@@ -403,12 +397,13 @@ const submitOrder = async () => {
               </button>
               <button class="tab-option-btn">Примеры работ</button>
               <button class="tab-option-btn">
-                Срок изготовления: <span>один рабочий день</span>
+                Срок изготовления: <span>{{ productionDaysText }}</span>
               </button>
             </div>
           </div>
           <TabOrder
             title="Буклет"
+            :subTitle="pageDescription || ''"
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"

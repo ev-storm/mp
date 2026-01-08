@@ -28,10 +28,6 @@ export default defineEventHandler(async (event) => {
 
     // Проверяем, что переменные окружения установлены
     if (!adminPassword || !adminSecretKey) {
-      console.error("❌ Конфигурация не настроена:", {
-        ADMIN_PASSWORD: !!adminPassword,
-        ADMIN_SECRET_KEY: !!adminSecretKey,
-      });
       throw createError({
         statusCode: 500,
         statusMessage:
@@ -74,7 +70,6 @@ export default defineEventHandler(async (event) => {
       message: "Успешный вход в систему",
     };
   } catch (error: any) {
-    console.error("Ошибка входа:", error);
     throw createError({
       statusCode: error.statusCode || 500,
       statusMessage: error.statusMessage || "Внутренняя ошибка сервера",

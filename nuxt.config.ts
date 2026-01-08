@@ -5,6 +5,10 @@
 const TELEGRAM_API_URL =
   "https://functions.yandexcloud.net/d4e1pouvgqhbgkjerjq9/form-tg";
 
+// URL функции Yandex Cloud для загрузки изображений в Object Storage
+// Замените на ваш URL функции после развертывания
+const UPLOAD_IMAGE_API_URL = process.env.UPLOAD_IMAGE_API_URL || "";
+
 export default defineNuxtConfig({
   devtools: { enabled: false },
 
@@ -25,14 +29,26 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       telegramApiUrl: TELEGRAM_API_URL,
-      // URL функции Yandex Cloud для аутентификации (если используется статический хостинг)
-      // Оставьте пустым, если используете SSR (nuxt build)
-      authApiUrl: process.env.AUTH_API_URL || "",
+      // URL функции Yandex Cloud для загрузки изображений
+      uploadImageApiUrl: UPLOAD_IMAGE_API_URL,
+      // Клиентская аутентификация для статического хостинга
+      // Сгенерируйте хеш пароля с помощью: node scripts/generate-password-hash.js <пароль> <секретный-ключ>
+      adminPasswordHash: process.env.ADMIN_PASSWORD_HASH || "",
+      adminSecretKey: process.env.ADMIN_SECRET_KEY || "",
     },
-    // Секретные ключи для аутентификации (только на сервере)
+    // Секретные ключи для аутентификации (только на сервере для SSR)
     // ОБЯЗАТЕЛЬНО: установите ADMIN_PASSWORD и ADMIN_SECRET_KEY в .env файле
     adminPassword: process.env.ADMIN_PASSWORD,
     adminSecretKey: process.env.ADMIN_SECRET_KEY,
+
+    // Yandex Object Storage конфигурация (только на сервере)
+    yandexStorageEndpoint:
+      process.env.YANDEX_STORAGE_ENDPOINT || "https://storage.yandexcloud.net",
+    yandexStorageRegion: process.env.YANDEX_STORAGE_REGION || "ru-central1",
+    yandexStorageBucket: process.env.YANDEX_STORAGE_BUCKET || "",
+    yandexStorageAccessKeyId: process.env.YANDEX_STORAGE_ACCESS_KEY_ID || "",
+    yandexStorageSecretAccessKey:
+      process.env.YANDEX_STORAGE_SECRET_ACCESS_KEY || "",
   },
 
   // Оптимизация для статического хостинга

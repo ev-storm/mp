@@ -18,7 +18,6 @@ export default defineEventHandler(async (event) => {
           : "Установите ADMIN_PASSWORD и ADMIN_SECRET_KEY в .env файле",
     };
   } catch (error: any) {
-    console.error("Ошибка проверки конфигурации:", error);
     return {
       error: "Ошибка проверки конфигурации",
       configured: false,

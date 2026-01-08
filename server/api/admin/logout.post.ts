@@ -17,7 +17,6 @@ export default defineEventHandler(async (event) => {
       message: "Успешный выход из системы",
     };
   } catch (error: any) {
-    console.error("Ошибка выхода:", error);
     throw createError({
       statusCode: error.statusCode || 500,
       statusMessage: error.statusMessage || "Внутренняя ошибка сервера",

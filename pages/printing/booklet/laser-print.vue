@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { reactive, computed, ref, watch, onMounted } from "vue";
+import { reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { OrderField } from "~/types/order-fields";
 import {
   calculateTotalPrice,
   getQuantityFromFields,
 } from "~/types/order-fields";
+import {
+  getOrderFieldsConfigSync,
+  getPageMeta,
+  type PageConfigKey,
+} from "~/config/order-fields-config";
 
 definePageMeta({
   key: (route) => route.fullPath,
@@ -20,101 +25,84 @@ useHead({
   ],
 });
 
-// Конфигурация полей для буклетов
-const fields = reactive<OrderField[]>([
-  {
-    id: "paper",
-    type: "dropdown",
-    label: "Бумага",
-    placeholder: "Выберите вплотность бумаги",
-    options: [
-      { label: "80 г/м²", price: 0 },
-      { label: "115 г/м²", price: 5 },
-      { label: "130 г/м²", price: 10 },
-      { label: "150 г/м²", price: 15 },
-      { label: "170 г/м²", price: 20 },
-      { label: "200 г/м²", price: 25 },
-      { label: "250 г/м²", price: 35 },
-      { label: "300 г/м²", price: 45 },
-    ],
-    value: null,
-  },
-  {
-    id: "format",
-    type: "dropdown",
-    label: "Формат",
-    placeholder: "Выберите формат",
-    options: [
-      { label: "А6 (105×148 мм)", price: 3 },
-      { label: "А5 (148×210 мм)", price: 5 },
-      { label: "А4 (210×297 мм)", price: 8 },
-      { label: "А3 (297×420 мм)", price: 15 },
-      { label: "Евро (99×210 мм)", price: 6 },
-    ],
-    value: null,
-  },
-  {
-    id: "creasing",
-    type: "toggle",
-    label: "Биговка",
-    tooltip:
-      "Сложение листа по биговке при высокой плотности бумаги предотвращает трещины краски и обеспечивает точный, лёгкий фальц.",
-    price: 2,
-    value: false,
-  },
-  {
-    id: "folding",
-    type: "dropdown",
-    label: "Сложение",
-    placeholder: "Выберите",
-    options: [
-      { label: "Без сложения", price: 0 },
-      { label: "1 фальц (пополам)", price: 2 },
-      { label: "2 фальца (евробуклет)", price: 4 },
-      { label: "2 фальца (гармошка)", price: 4 },
-      { label: "3 фальца (гармошка)", price: 6 },
-      { label: "4 фальца (гармошка)", price: 8 },
-    ],
-    value: null,
-  },
+// Конфигурация полей из единого файла конфигурации
+const pageKey: PageConfigKey = "booklet-laser";
+const fields = reactive<OrderField[]>(getOrderFieldsConfigSync(pageKey));
 
-  {
-    id: "quantity",
-    type: "input",
-    label: "Тираж",
-    placeholder: "Введите количество",
-    inputType: "number",
-    min: 1,
-    value: null,
-  },
+// Функция для форматирования количества дней
+const formatProductionDays = (days: number | undefined): string => {
+  if (!days || days === 0) return "один рабочий день";
+  if (days === 1) return "один рабочий день";
+  if (days >= 2 && days <= 4) return `${days} рабочих дня`;
+  return `${days} рабочих дней`;
+};
 
-  {
-    id: "perforation",
-    type: "toggle",
-    label: "Перфорация",
-    tooltip:
-      "Создание линии из мелких отверстий или просечек, которая облегчает аккуратный отрыв части листовки — например, купона, билета или талона.",
-    price: 3,
-    value: false,
-  },
+// Метаданные страницы (срок изготовления) - реактивные, обновляются динамически
+const productionDays = ref<number | undefined>(1);
 
-  {
-    id: "lamination",
-    type: "dropdown",
-    label: "Ламинация",
-    placeholder: "Выберите вид ламинации",
-    options: [
-      { label: "Без ламинации", price: 0 },
-      { label: "Глянцевая 1 сторона", price: 3 },
-      { label: "Глянцевая 2 стороны", price: 5 },
-      { label: "Матовая 1 сторона", price: 3 },
-      { label: "Матовая 2 стороны", price: 5 },
-      { label: "Soft-touch 1 сторона", price: 8 },
-      { label: "Soft-touch 2 стороны", price: 15 },
-    ],
-    value: null,
-  },
-]);
+// Обновить метаданные из localStorage
+const updateProductionDays = () => {
+  const pageMeta = getPageMeta(pageKey);
+  const newValue = pageMeta.productionDays ?? 1;
+  if (productionDays.value !== newValue) {
+    productionDays.value = newValue;
+  }
+};
+
+// Обновить поля из конфигурации при изменении в localStorage
+const updateFields = () => {
+  const newFields = getOrderFieldsConfigSync(pageKey);
+  // Обновляем поля, сохраняя реактивность
+  if (newFields.length !== fields.length || JSON.stringify(newFields) !== JSON.stringify(fields)) {
+    fields.splice(0, fields.length, ...newFields);
+  }
+};
+
+// Слушаем изменения конфигурации
+const handleConfigUpdate = (e?: StorageEvent) => {
+  if (!e || e.key === "order-fields-config") {
+    updateFields();
+  }
+  if (!e || e.key === "order-fields-meta") {
+    updateProductionDays();
+  }
+};
+
+// Слушаем кастомное событие обновления конфигурации
+const handlePageConfigUpdated = () => {
+  updateFields();
+  updateProductionDays();
+};
+
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  updateProductionDays();
+  updateFields();
+  // Слушаем изменения в localStorage (когда админ-панель сохраняет данные в другой вкладке)
+  window.addEventListener("storage", handleConfigUpdate);
+  // Слушаем кастомное событие обновления конфигурации (когда админ-панель сохраняет данные в той же вкладке)
+  window.addEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  // Также проверяем изменения при фокусе окна
+  window.addEventListener("focus", () => {
+    updateFields();
+    updateProductionDays();
+  });
+  // Периодическая проверка изменений (каждые 2 секунды)
+  intervalId = setInterval(() => {
+    updateFields();
+    updateProductionDays();
+  }, 2000);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("storage", handleConfigUpdate);
+  window.removeEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.removeEventListener("focus", handleConfigUpdate);
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
 
 // Активная кнопка буклета (индекс)
 const activeBookBtn = ref<number | null>(null);
@@ -403,7 +391,7 @@ const submitOrder = async () => {
               </button>
               <button class="tab-option-btn">Примеры работ</button>
               <button class="tab-option-btn">
-                Срок изготовления: <span>один рабочий день</span>
+                Срок изготовления: <span>{{ formatProductionDays(productionDays) }}</span>
               </button>
             </div>
           </div>

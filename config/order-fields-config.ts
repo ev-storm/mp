@@ -306,23 +306,876 @@ export const orderFieldsConfig: Record<PageConfigKey, OrderField[]> = {
     },
   ],
 
-  // Заглушки для страниц, которые еще не созданы
-  "booklet-laser": [],
-  "booklet-ofset": [],
-  "visit-card-laser": [],
-  "visit-card-ofset": [],
-  "visit-card-uf": [],
-  "stickers-print": [],
-  "plotter-paper": [],
-  "bind-plastic": [],
-  "bind-metal": [],
-  "bind-hard": [],
-  "lamination-doc": [],
-  "lamination-large": [],
-  "large-print": [],
-  "large-scan": [],
-  "large-plan": [],
-  "scan-print": [],
+  // Печать листовок и буклетов (лазерная)
+  "booklet-laser": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А6 (105×148 мм)", price: 0 },
+        { label: "А5 (148×210 мм)", price: 0 },
+        { label: "А4 (210×297 мм)", price: 0 },
+        { label: "А3 (297×420 мм)", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "paper",
+      type: "dropdown",
+      label: "Бумага",
+      placeholder: "Выберите плотность бумаги",
+      options: [
+        { label: "80 г/м²", price: 0 },
+        { label: "115 г/м²", price: 0 },
+        { label: "130 г/м²", price: 0 },
+        { label: "150 г/м²", price: 0 },
+        { label: "170 г/м²", price: 0 },
+        { label: "200 г/м²", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет печати",
+      placeholder: "Выберите цвет печати",
+      options: [
+        { label: "Черно-белая", price: 0 },
+        { label: "Цветная", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "sides",
+      type: "dropdown",
+      label: "Стороны",
+      placeholder: "Выберите стороны печати",
+      options: [
+        { label: "Односторонняя", price: 0 },
+        { label: "Двусторонняя", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Тираж",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Печать листовок и буклетов (офсетная)
+  "booklet-ofset": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А6 (105×148 мм)", price: 0 },
+        { label: "А5 (148×210 мм)", price: 0 },
+        { label: "А4 (210×297 мм)", price: 0 },
+        { label: "А3 (297×420 мм)", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "paper",
+      type: "dropdown",
+      label: "Бумага",
+      placeholder: "Выберите плотность бумаги",
+      options: [
+        { label: "80 г/м²", price: 0 },
+        { label: "115 г/м²", price: 0 },
+        { label: "130 г/м²", price: 0 },
+        { label: "150 г/м²", price: 0 },
+        { label: "170 г/м²", price: 0 },
+        { label: "200 г/м²", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет печати",
+      placeholder: "Выберите цвет печати",
+      options: [
+        { label: "Черно-белая", price: 0 },
+        { label: "Цветная", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "sides",
+      type: "dropdown",
+      label: "Стороны",
+      placeholder: "Выберите стороны печати",
+      options: [
+        { label: "Односторонняя", price: 0 },
+        { label: "Двусторонняя", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Тираж",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Печать визиток (лазерная)
+  "visit-card-laser": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "90×50 мм (стандарт)", price: 0 },
+        { label: "85×55 мм (евро)", price: 0 },
+        { label: "Другой размер", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "paper",
+      type: "dropdown",
+      label: "Бумага",
+      placeholder: "Выберите тип бумаги",
+      options: [
+        { label: "Мелованная 300 г/м²", price: 0 },
+        { label: "Мелованная 350 г/м²", price: 0 },
+        { label: "Дизайнерская", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет печати",
+      placeholder: "Выберите цвет печати",
+      options: [
+        { label: "Черно-белая", price: 0 },
+        { label: "Цветная", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "sides",
+      type: "dropdown",
+      label: "Стороны",
+      placeholder: "Выберите стороны печати",
+      options: [
+        { label: "Односторонняя", price: 0 },
+        { label: "Двусторонняя", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Тираж",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Печать визиток (офсетная)
+  "visit-card-ofset": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "90×50 мм (стандарт)", price: 0 },
+        { label: "85×55 мм (евро)", price: 0 },
+        { label: "Другой размер", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "paper",
+      type: "dropdown",
+      label: "Бумага",
+      placeholder: "Выберите тип бумаги",
+      options: [
+        { label: "Мелованная 300 г/м²", price: 0 },
+        { label: "Мелованная 350 г/м²", price: 0 },
+        { label: "Дизайнерская", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет печати",
+      placeholder: "Выберите цвет печати",
+      options: [
+        { label: "Черно-белая", price: 0 },
+        { label: "Цветная", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "sides",
+      type: "dropdown",
+      label: "Стороны",
+      placeholder: "Выберите стороны печати",
+      options: [
+        { label: "Односторонняя", price: 0 },
+        { label: "Двусторонняя", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Тираж",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Печать визиток (УФ)
+  "visit-card-uf": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "90×50 мм (стандарт)", price: 0 },
+        { label: "85×55 мм (евро)", price: 0 },
+        { label: "Другой размер", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "paper",
+      type: "dropdown",
+      label: "Бумага",
+      placeholder: "Выберите тип бумаги",
+      options: [
+        { label: "Мелованная 300 г/м²", price: 0 },
+        { label: "Мелованная 350 г/м²", price: 0 },
+        { label: "Пластик", price: 0 },
+        { label: "Дизайнерская", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "finish",
+      type: "dropdown",
+      label: "Отделка",
+      placeholder: "Выберите тип отделки",
+      options: [
+        { label: "Без отделки", price: 0 },
+        { label: "Ламинация", price: 0 },
+        { label: "Выборочный лак", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Тираж",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Наклейки и плоттерная резка
+  "stickers-print": [
+    {
+      id: "material",
+      type: "dropdown",
+      label: "Материал",
+      placeholder: "Выберите материал",
+      options: [
+        { label: "Бумага самоклеящаяся", price: 0 },
+        { label: "Пленка виниловая", price: 0 },
+        { label: "Пленка прозрачная", price: 0 },
+        { label: "Пленка матовая", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А4 (210×297 мм)", price: 0 },
+        { label: "А3 (297×420 мм)", price: 0 },
+        { label: "Произвольный размер", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет печати",
+      placeholder: "Выберите цвет печати",
+      options: [
+        { label: "Черно-белая", price: 0 },
+        { label: "Цветная", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "cutting",
+      type: "dropdown",
+      label: "Резка",
+      placeholder: "Выберите тип резки",
+      options: [
+        { label: "Прямая резка", price: 0 },
+        { label: "Фигурная резка", price: 0 },
+        { label: "Без резки", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Тираж",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Плоттерная бумага
+  "plotter-paper": [
+    {
+      id: "material",
+      type: "dropdown",
+      label: "Материал",
+      placeholder: "Выберите материал",
+      options: [
+        { label: "Бумага самоклеящаяся", price: 0 },
+        { label: "Пленка виниловая", price: 0 },
+        { label: "Пленка прозрачная", price: 0 },
+        { label: "Пленка матовая", price: 0 },
+        { label: "Баннерная ткань", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "width",
+      type: "input",
+      label: "Ширина (см)",
+      placeholder: "Введите ширину",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+    {
+      id: "length",
+      type: "input",
+      label: "Длина (см)",
+      placeholder: "Введите длину",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Переплет (пластик)
+  "bind-plastic": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А5 (148×210 мм)", price: 0 },
+        { label: "А4 (210×297 мм)", price: 0 },
+        { label: "А3 (297×420 мм)", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "thickness",
+      type: "dropdown",
+      label: "Толщина",
+      placeholder: "Выберите толщину",
+      options: [
+        { label: "До 50 листов", price: 0 },
+        { label: "50-100 листов", price: 0 },
+        { label: "100-200 листов", price: 0 },
+        { label: "Более 200 листов", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет обложки",
+      placeholder: "Выберите цвет",
+      options: [
+        { label: "Прозрачный", price: 0 },
+        { label: "Черный", price: 0 },
+        { label: "Синий", price: 0 },
+        { label: "Красный", price: 0 },
+        { label: "Другой", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Переплет (металл)
+  "bind-metal": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А5 (148×210 мм)", price: 0 },
+        { label: "А4 (210×297 мм)", price: 0 },
+        { label: "А3 (297×420 мм)", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "thickness",
+      type: "dropdown",
+      label: "Толщина",
+      placeholder: "Выберите толщину",
+      options: [
+        { label: "До 50 листов", price: 0 },
+        { label: "50-100 листов", price: 0 },
+        { label: "100-200 листов", price: 0 },
+        { label: "Более 200 листов", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Переплет (твердый)
+  "bind-hard": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А5 (148×210 мм)", price: 0 },
+        { label: "А4 (210×297 мм)", price: 0 },
+        { label: "А3 (297×420 мм)", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "cover",
+      type: "dropdown",
+      label: "Обложка",
+      placeholder: "Выберите тип обложки",
+      options: [
+        { label: "Тканевая", price: 0 },
+        { label: "Кожаная", price: 0 },
+        { label: "Бумажная", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "thickness",
+      type: "dropdown",
+      label: "Толщина",
+      placeholder: "Выберите толщину",
+      options: [
+        { label: "До 100 листов", price: 0 },
+        { label: "100-300 листов", price: 0 },
+        { label: "300-500 листов", price: 0 },
+        { label: "Более 500 листов", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Ламинирование документов
+  "lamination-doc": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А6 (105×148 мм)", price: 0 },
+        { label: "А5 (148×210 мм)", price: 0 },
+        { label: "А4 (210×297 мм)", price: 0 },
+        { label: "А3 (297×420 мм)", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "thickness",
+      type: "dropdown",
+      label: "Толщина пленки",
+      placeholder: "Выберите толщину",
+      options: [
+        { label: "75 мкм", price: 0 },
+        { label: "125 мкм", price: 0 },
+        { label: "250 мкм", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "type",
+      type: "dropdown",
+      label: "Тип ламинации",
+      placeholder: "Выберите тип",
+      options: [
+        { label: "Глянцевая", price: 0 },
+        { label: "Матовая", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Широкоформатное ламинирование
+  "lamination-large": [
+    {
+      id: "width",
+      type: "input",
+      label: "Ширина (см)",
+      placeholder: "Введите ширину",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+    {
+      id: "length",
+      type: "input",
+      label: "Длина (см)",
+      placeholder: "Введите длину",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+    {
+      id: "thickness",
+      type: "dropdown",
+      label: "Толщина пленки",
+      placeholder: "Выберите толщину",
+      options: [
+        { label: "75 мкм", price: 0 },
+        { label: "125 мкм", price: 0 },
+        { label: "250 мкм", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "type",
+      type: "dropdown",
+      label: "Тип ламинации",
+      placeholder: "Выберите тип",
+      options: [
+        { label: "Глянцевая", price: 0 },
+        { label: "Матовая", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Широкоформатная печать
+  "large-print": [
+    {
+      id: "material",
+      type: "dropdown",
+      label: "Материал",
+      placeholder: "Выберите материал",
+      options: [
+        { label: "Баннерная ткань", price: 0 },
+        { label: "Пленка самоклеящаяся", price: 0 },
+        { label: "Пленка для окна", price: 0 },
+        { label: "Бумага постерная", price: 0 },
+        { label: "Холст", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "width",
+      type: "input",
+      label: "Ширина (см)",
+      placeholder: "Введите ширину",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+    {
+      id: "length",
+      type: "input",
+      label: "Длина (см)",
+      placeholder: "Введите длину",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+    {
+      id: "resolution",
+      type: "dropdown",
+      label: "Разрешение",
+      placeholder: "Выберите разрешение",
+      options: [
+        { label: "720 dpi", price: 0 },
+        { label: "1440 dpi", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Широкоформатное сканирование
+  "large-scan": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат оригинала",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А3 (297×420 мм)", price: 0 },
+        { label: "А2 (420×594 мм)", price: 0 },
+        { label: "А1 (594×841 мм)", price: 0 },
+        { label: "А0 (841×1189 мм)", price: 0 },
+        { label: "Произвольный размер", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "resolution",
+      type: "dropdown",
+      label: "Разрешение",
+      placeholder: "Выберите разрешение",
+      options: [
+        { label: "150 dpi", price: 0 },
+        { label: "300 dpi", price: 0 },
+        { label: "600 dpi", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет",
+      placeholder: "Выберите цвет",
+      options: [
+        { label: "Черно-белое", price: 0 },
+        { label: "Цветное", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "format-output",
+      type: "dropdown",
+      label: "Формат файла",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "PDF", price: 0 },
+        { label: "JPG", price: 0 },
+        { label: "TIFF", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Печать чертежей
+  "large-plan": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А3 (297×420 мм)", price: 0 },
+        { label: "А2 (420×594 мм)", price: 0 },
+        { label: "А1 (594×841 мм)", price: 0 },
+        { label: "А0 (841×1189 мм)", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "paper",
+      type: "dropdown",
+      label: "Бумага",
+      placeholder: "Выберите тип бумаги",
+      options: [
+        { label: "Чертежная", price: 0 },
+        { label: "Калька", price: 0 },
+        { label: "Пленка", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет печати",
+      placeholder: "Выберите цвет печати",
+      options: [
+        { label: "Черно-белая", price: 0 },
+        { label: "Цветная", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Количество",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
+
+  // Печать документа до А3
+  "scan-print": [
+    {
+      id: "format",
+      type: "dropdown",
+      label: "Формат",
+      placeholder: "Выберите формат",
+      options: [
+        { label: "А6 (105×148 мм)", price: 0 },
+        { label: "А5 (148×210 мм)", price: 0 },
+        { label: "А4 (210×297 мм)", price: 0 },
+        { label: "А3 (297×420 мм)", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "paper",
+      type: "dropdown",
+      label: "Бумага",
+      placeholder: "Выберите плотность бумаги",
+      options: [
+        { label: "80 г/м²", price: 0 },
+        { label: "115 г/м²", price: 0 },
+        { label: "130 г/м²", price: 0 },
+        { label: "150 г/м²", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "color",
+      type: "dropdown",
+      label: "Цвет печати",
+      placeholder: "Выберите цвет печати",
+      options: [
+        { label: "Черно-белая", price: 0 },
+        { label: "Цветная", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "sides",
+      type: "dropdown",
+      label: "Стороны",
+      placeholder: "Выберите стороны печати",
+      options: [
+        { label: "Односторонняя", price: 0 },
+        { label: "Двусторонняя", price: 0 },
+      ],
+      value: null,
+    },
+    {
+      id: "quantity",
+      type: "input",
+      label: "Тираж",
+      placeholder: "Введите количество",
+      inputType: "number",
+      min: 1,
+      value: null,
+    },
+  ],
 
   // Фотопечать
   "photo-test": [
@@ -603,6 +1456,7 @@ export function clearConfigCache() {
  */
 export interface PageMeta {
   productionDays?: number; // Количество дней для изготовления
+  description?: string; // Текст описания для страницы
 }
 
 const META_STORAGE_KEY = "order-fields-meta";

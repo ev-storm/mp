@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { reactive, computed, ref } from "vue";
+import { reactive, computed, ref, onMounted, onUnmounted } from "vue";
 import type { OrderField } from "~/types/order-fields";
 import {
   calculateTotalPrice,
   getQuantityFromFields,
 } from "~/types/order-fields";
+import {
+  getOrderFieldsConfigSync,
+  getPageMeta,
+  type PageConfigKey,
+} from "~/config/order-fields-config";
 
 definePageMeta({
   key: (route) => route.fullPath,
@@ -20,92 +25,80 @@ useHead({
   ],
 });
 
-// Конфигурация полей для визиток (УФ печать)
-const fields = reactive<OrderField[]>([
-  {
-    id: "paper",
-    type: "dropdown",
-    label: "Бумага",
-    placeholder: "Выберите плотность бумаги",
-    options: [
-      { label: "80 г/м²", price: 0 },
-      { label: "120 г/м²", price: 10 },
-      { label: "160 г/м²", price: 20 },
-      { label: "200 г/м²", price: 30 },
-      { label: "250 г/м²", price: 40 },
-      { label: "300 г/м²", price: 50 },
-    ],
-    value: null,
-  },
-  {
-    id: "format",
-    type: "dropdown",
-    label: "Формат",
-    placeholder: "Выберите формат бумаги",
-    options: [
-      { label: "90x50", price: 150 },
-      { label: "95x55", price: 200 },
-    ],
-    value: null,
-  },
-  {
-    id: "sides",
-    type: "dropdown",
-    label: "Стороны",
-    placeholder: "Выберите стороны печати",
-    options: [
-      { label: "Односторонняя", price: 0 },
-      { label: "Двусторонняя", price: 100 },
-    ],
-    value: null,
-  },
-  {
-    id: "radius",
-    type: "dropdown",
-    label: "Скругление углов",
-    placeholder: "Выберите диаметр скругления",
-    options: [
-      { label: "Без скругления", price: 0 },
-      { label: "Ø20", price: 15 },
-      { label: "Ø25", price: 20 },
-      { label: "Ø30", price: 25 },
-    ],
-    value: null,
-  },
-  {
-    id: "color",
-    type: "dropdown",
-    label: "Цвет печати",
-    placeholder: "Выберите цвет печати",
-    options: [
-      { label: "Черно-белая", price: 0 },
-      { label: "Цветная", price: 50 },
-    ],
-    value: null,
-  },
-  {
-    id: "lamination",
-    type: "dropdown",
-    label: "Ламинация",
-    placeholder: "Выберите тип ламинации",
-    options: [
-      { label: "Без ламинации", price: 0 },
-      { label: "Матовая", price: 30 },
-      { label: "Глянцевая", price: 30 },
-      { label: "Soft-touch", price: 50 },
-    ],
-    value: null,
-  },
-  {
-    id: "quantity",
-    type: "input",
-    label: "Тираж",
-    placeholder: "Введите количество",
-    inputType: "number",
-    min: 1,
-    value: null,
-  },
-]);
+// Конфигурация полей из единого файла конфигурации
+const pageKey: PageConfigKey = "visit-card-uf";
+const fields = reactive<OrderField[]>(getOrderFieldsConfigSync(pageKey));
+
+// Функция для форматирования количества дней
+const formatProductionDays = (days: number | undefined): string => {
+  if (!days || days === 0) return "один рабочий день";
+  if (days === 1) return "один рабочий день";
+  if (days >= 2 && days <= 4) return `${days} рабочих дня`;
+  return `${days} рабочих дней`;
+};
+
+// Метаданные страницы (срок изготовления) - реактивные, обновляются динамически
+const productionDays = ref<number | undefined>(1);
+
+// Обновить метаданные из localStorage
+const updateProductionDays = () => {
+  const pageMeta = getPageMeta(pageKey);
+  const newValue = pageMeta.productionDays ?? 1;
+  if (productionDays.value !== newValue) {
+    productionDays.value = newValue;
+  }
+};
+
+// Обновить поля из конфигурации при изменении в localStorage
+const updateFields = () => {
+  const newFields = getOrderFieldsConfigSync(pageKey);
+  if (newFields.length !== fields.length || JSON.stringify(newFields) !== JSON.stringify(fields)) {
+    fields.splice(0, fields.length, ...newFields);
+  }
+};
+
+// Слушаем изменения конфигурации
+const handleConfigUpdate = (e?: StorageEvent) => {
+  if (!e || e.key === "order-fields-config") {
+    updateFields();
+  }
+  if (!e || e.key === "order-fields-meta") {
+    updateProductionDays();
+  }
+};
+
+// Слушаем кастомное событие обновления конфигурации
+const handlePageConfigUpdated = () => {
+  updateFields();
+  updateProductionDays();
+};
+
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  updateProductionDays();
+  updateFields();
+  window.addEventListener("storage", handleConfigUpdate);
+  window.addEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.addEventListener("focus", () => {
+    updateFields();
+    updateProductionDays();
+  });
+  intervalId = setInterval(() => {
+    updateFields();
+    updateProductionDays();
+  }, 2000);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("storage", handleConfigUpdate);
+  window.removeEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.removeEventListener("focus", handleConfigUpdate);
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
+
 
 // Заказать дизайн
 const isDesignActive = ref(false);
@@ -203,7 +196,7 @@ const submitOrder = async () => {
               </button>
               <button class="tab-option-btn">Примеры работ</button>
               <button class="tab-option-btn">
-                Срок изготовления: <span>один рабочий день</span>
+                Срок изготовления: <span>{{ formatProductionDays(productionDays) }}</span>
               </button>
             </div>
           </div>

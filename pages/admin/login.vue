@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import {
+  verifyPassword,
+  generateAuthToken,
+  saveToken,
+  getToken,
+  isTokenExpired,
+  checkBruteForceProtection,
+  recordFailedAttempt,
+  clearFailedAttempts,
+} from "~/utils/auth-client";
 
 useHead({
   title: "Вход в админ-панель",
@@ -16,32 +26,48 @@ useHead({
 const password = ref("");
 const loading = ref(false);
 const error = ref("");
+const lockoutTime = ref<number | null>(null);
+const remainingAttempts = ref<number | null>(null);
 const router = useRouter();
 const route = useRoute();
 
 // Проверка, если уже авторизован, перенаправляем
-onMounted(async () => {
-  try {
-    const response = await $fetch("/api/admin/check");
-    if (response.authenticated) {
+onMounted(() => {
+  if (process.client) {
+    const token = getToken();
+    if (token && !isTokenExpired()) {
       router.push("/admin");
     }
-  } catch (err) {
-    // Игнорируем ошибку, продолжаем показ формы входа
   }
 });
 
 // Обработка входа
 const handleLogin = async () => {
-  console.log(
-    "🔐 handleLogin вызван, пароль:",
-    password.value ? "***" : "пусто"
-  );
-
   if (!password.value.trim()) {
     error.value = "Введите пароль";
-    console.log("❌ Пароль пустой");
     return;
+  }
+
+  // Проверяем защиту от брутфорса
+  const bruteForceCheck = checkBruteForceProtection();
+  if (!bruteForceCheck.allowed) {
+    if (bruteForceCheck.lockoutTime) {
+      const minutes = Math.ceil(bruteForceCheck.lockoutTime / 60000);
+      error.value = `Слишком много неудачных попыток. Попробуйте снова через ${minutes} ${
+        minutes === 1 ? "минуту" : minutes < 5 ? "минуты" : "минут"
+      }.`;
+      lockoutTime.value = bruteForceCheck.lockoutTime;
+    } else {
+      error.value = "Доступ временно заблокирован";
+    }
+    return;
+  }
+
+  // Устанавливаем remainingAttempts только если осталось 3 или меньше попыток
+  if (bruteForceCheck.remainingAttempts <= 3) {
+    remainingAttempts.value = bruteForceCheck.remainingAttempts;
+  } else {
+    remainingAttempts.value = null;
   }
 
   loading.value = true;
@@ -49,258 +75,97 @@ const handleLogin = async () => {
 
   try {
     const config = useRuntimeConfig();
-    // Используем внешний API, если настроен, иначе локальный
-    const authApiUrl = config.public.authApiUrl as string | undefined;
-    const apiUrl = authApiUrl ? `${authApiUrl}/login` : "/api/admin/login";
 
-    console.log("📤 Отправка запроса на:", apiUrl);
-    console.log("📤 Используется внешний API:", !!authApiUrl);
+    // Получаем хеш пароля и секретный ключ из конфигурации
+    const passwordHash = (config.public as any).adminPasswordHash as
+      | string
+      | undefined;
+    const secretKey = (config.public as any).adminSecretKey as
+      | string
+      | undefined;
 
-    // Для внешнего API пробуем использовать $fetch (как в Telegram функции)
-    let response;
-    if (authApiUrl) {
-      console.log("📡 Отправка запроса на:", apiUrl);
-      console.log("📡 Используется $fetch (как в Telegram функции)");
+    // Проверяем, настроена ли клиентская аутентификация
+    if (
+      !passwordHash ||
+      !secretKey ||
+      passwordHash === "" ||
+      secretKey === ""
+    ) {
+      error.value =
+        "Аутентификация не настроена. Настройте ADMIN_PASSWORD_HASH и ADMIN_SECRET_KEY в .env файле.";
+      loading.value = false;
+      return;
+    }
 
-      try {
-        // Используем $fetch, как в Telegram функции
-        response = await $fetch(apiUrl, {
-          method: "POST",
-          body: {
-            password: password.value,
-          },
-          // Не используем credentials для внешнего API
-          credentials: "omit",
-        });
-      } catch (fetchError: any) {
-        console.error("❌ Ошибка при запросе к функции:", fetchError);
-        console.error("❌ Детали ошибки:", {
-          name: fetchError.name,
-          message: fetchError.message,
-          statusCode: fetchError.statusCode,
-          status: fetchError.status,
-          data: fetchError.data,
-          url: apiUrl,
-        });
+    // Проверяем пароль
+    const isValid = await verifyPassword(password.value, passwordHash!);
 
-        // Если это сетевая ошибка, предлагаем использовать localStorage как временное решение
-        if (
-          fetchError.message?.includes("Failed to fetch") ||
-          fetchError.statusCode === 0 ||
-          !fetchError.statusCode
-        ) {
-          // Временное решение для статического хостинга: проверка пароля на клиенте
-          // ⚠️ ВНИМАНИЕ: Это менее безопасно! Используйте только для тестирования или если функция недоступна
-          console.warn(
-            "⚠️ Сервер недоступен. Используется временная проверка на клиенте."
-          );
+    if (!isValid) {
+      // Регистрируем неудачную попытку
+      recordFailedAttempt();
 
-          // Получаем пароль из runtimeConfig (только для проверки)
-          const config = useRuntimeConfig();
-          const expectedPassword =
-            (config.public as any)?.adminPassword || process.env.ADMIN_PASSWORD;
+      // Проверяем оставшиеся попытки
+      const newCheck = checkBruteForceProtection();
 
-          if (!expectedPassword) {
-            throw {
-              status: 0,
-              statusCode: 0,
-              statusMessage:
-                "Сервер недоступен и локальный пароль не настроен. Настройте AUTH_API_URL или ADMIN_PASSWORD.",
-              message:
-                "Сервер недоступен и локальный пароль не настроен. Настройте AUTH_API_URL или ADMIN_PASSWORD.",
-              isNetworkError: true,
-            };
-          }
-
-          // Простая проверка пароля на клиенте (НЕ БЕЗОПАСНО для production!)
-          if (password.value !== expectedPassword) {
-            throw {
-              status: 401,
-              statusCode: 401,
-              statusMessage: "Неверный пароль",
-              message: "Неверный пароль",
-            };
-          }
-
-          // Генерируем простой токен (не используется для реальной аутентификации)
-          const simpleToken = btoa(Date.now().toString() + "-admin");
-
-          response = {
-            success: true,
-            message: "Успешный вход в систему (локальная проверка)",
-            token: simpleToken,
-            localAuth: true, // Флаг, что это локальная аутентификация
-          };
-
-          console.warn(
-            "⚠️ Используется локальная аутентификация (менее безопасно)"
-          );
+      if (newCheck.remainingAttempts > 0) {
+        // Показываем предупреждение только если осталось 3 или меньше попыток
+        if (newCheck.remainingAttempts <= 3) {
+          remainingAttempts.value = newCheck.remainingAttempts;
+          error.value = `Неверный пароль. Осталось попыток: ${newCheck.remainingAttempts}`;
         } else {
-          // Другая ошибка - пробрасываем как есть
-          throw {
-            status: fetchError.statusCode || 500,
-            statusCode: fetchError.statusCode || 500,
-            statusMessage:
-              fetchError.data?.error ||
-              fetchError.data?.message ||
-              fetchError.statusMessage ||
-              fetchError.message ||
-              "Ошибка входа",
-            message:
-              fetchError.data?.error ||
-              fetchError.data?.message ||
-              fetchError.statusMessage ||
-              fetchError.message ||
-              "Ошибка входа",
-            data: fetchError.data,
-          };
+          remainingAttempts.value = null;
+          error.value = "Неверный пароль";
         }
+      } else {
+        remainingAttempts.value = null;
+        error.value =
+          "Слишком много неудачных попыток. Попробуйте снова через 15 минут.";
+        lockoutTime.value = newCheck.lockoutTime || 15 * 60 * 1000;
       }
 
-      console.log("📡 Ответ получен:", {
-        ok: fetchResponse.ok,
-        status: fetchResponse.status,
-        statusText: fetchResponse.statusText,
-        headers: Object.fromEntries(fetchResponse.headers.entries()),
-      });
+      // Добавляем задержку для усложнения брутфорса
+      await new Promise((resolve) =>
+        setTimeout(resolve, 1000 + Math.random() * 1000)
+      );
 
-      if (!fetchResponse.ok) {
-        let errorData = {};
-        try {
-          const text = await fetchResponse.text();
-          console.error("❌ Текст ошибки:", text);
-          errorData = JSON.parse(text);
-        } catch (e) {
-          console.error("❌ Не удалось распарсить ошибку:", e);
-        }
-
-        throw {
-          status: fetchResponse.status,
-          statusCode: fetchResponse.status,
-          statusMessage:
-            errorData.error ||
-            errorData.message ||
-            `HTTP ${fetchResponse.status}: ${fetchResponse.statusText}`,
-          message:
-            errorData.error ||
-            errorData.message ||
-            `HTTP ${fetchResponse.status}: ${fetchResponse.statusText}`,
-          data: errorData,
-        };
-      }
-
-      const responseText = await fetchResponse.text();
-      console.log("📥 Ответ (текст):", responseText);
-
-      try {
-        response = JSON.parse(responseText);
-      } catch (e) {
-        console.error("❌ Ошибка парсинга JSON:", e);
-        throw {
-          status: 500,
-          statusCode: 500,
-          statusMessage: "Неверный формат ответа от сервера",
-          message: "Неверный формат ответа от сервера",
-        };
-      }
-
-      console.log("✅ Ответ (объект):", response);
-    } else {
-      // Для локального API используем $fetch
-      response = await $fetch(apiUrl, {
-        method: "POST",
-        body: {
-          password: password.value,
-        },
-        credentials: "include", // Важно для работы с cookies
-      });
+      loading.value = false;
+      return;
     }
 
-    console.log("✅ Ответ получен:", response);
+    // Пароль верный - очищаем счетчик попыток
+    clearFailedAttempts();
+    remainingAttempts.value = null;
+    lockoutTime.value = null;
 
-    // Проверяем разные варианты успешного ответа
-    if (response && (response as any).success) {
-      console.log("✅ Успешный вход, ожидание 100ms перед перенаправлением...");
+    // Генерируем токен
+    const token = await generateAuthToken(password.value, secretKey!);
+    saveToken(token);
 
-      // Если используется внешний API (статический хостинг), сохраняем токен в localStorage
-      const config = useRuntimeConfig();
-      const authApiUrl = config.public.authApiUrl as string | undefined;
-
-      if (authApiUrl && (response as any).token) {
-        // Сохраняем токен в localStorage для статического хостинга
-        localStorage.setItem("admin-auth-token", (response as any).token);
-        console.log("💾 Токен сохранен в localStorage");
-      }
-
-      // Даем время cookie установиться (если используется SSR)
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Перенаправляем на страницу админки
-      const redirectPath = (route.query.redirect as string) || "/admin";
-      console.log("🔄 Перенаправление на:", redirectPath);
-
-      // Используем window.location для принудительной перезагрузки страницы
-      // Это гарантирует, что middleware увидит новый cookie/token
+    // Перенаправляем на страницу админки
+    const redirectPath = (route.query.redirect as string) || "/admin";
+    setTimeout(() => {
       window.location.href = redirectPath;
-    } else {
-      console.warn("⚠️ Ответ получен, но success не true:", response);
-      error.value = "Неожиданный ответ от сервера";
-    }
+    }, 100);
   } catch (err: any) {
-    console.error("❌ Ошибка входа:", err);
-    console.error("❌ Структура ошибки:", {
-      statusCode: err.statusCode,
-      status: err.status,
-      statusMessage: err.statusMessage,
-      message: err.message,
-      data: err.data,
-    });
-
-    // Обрабатываем разные форматы ошибок
     let errorMessage = "Ошибка входа. Проверьте пароль.";
 
-    // Проверяем сетевые ошибки в первую очередь
-    if (err.isNetworkError || err.statusCode === 0 || err.status === 0) {
-      errorMessage =
-        err.message ||
-        err.statusMessage ||
-        "Ошибка подключения к серверу. Проверьте URL функции в настройках (AUTH_API_URL).";
-    }
-    // Проверяем разные варианты структуры ошибки
-    else if (err.data?.statusMessage) {
-      errorMessage = err.data.statusMessage;
-    } else if (err.data?.message) {
-      errorMessage = err.data.message;
-    } else if (err.data?.hint) {
-      errorMessage = err.data.hint;
+    if (err.message) {
+      // Проверяем ошибки связанные с crypto API
+      if (err.message.includes("crypto") || err.message.includes("HTTPS")) {
+        errorMessage =
+          "Аутентификация требует HTTPS. Убедитесь, что сайт работает по защищенному соединению.";
+      } else if (err.statusMessage) {
+        errorMessage = err.statusMessage;
+      } else {
+        errorMessage = err.message;
+      }
     } else if (err.statusMessage) {
       errorMessage = err.statusMessage;
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-
-    // Если статус 401, просто показываем сообщение об ошибке
-    if (err.statusCode === 401 || err.status === 401) {
-      if (!errorMessage || errorMessage === "Ошибка входа. Проверьте пароль.") {
-        errorMessage = "Неверный пароль";
-      }
-    }
-
-    // Если статус 500, возможно, конфигурация не настроена
-    if (err.statusCode === 500 || err.status === 500) {
-      if (
-        errorMessage.includes("не настроена") ||
-        errorMessage.includes("не настроен")
-      ) {
-        errorMessage =
-          "Конфигурация не настроена. Установите ADMIN_PASSWORD и ADMIN_SECRET_KEY в переменных окружения функции Yandex Cloud.";
-      }
     }
 
     error.value = errorMessage;
   } finally {
     loading.value = false;
-    console.log("🏁 handleLogin завершен, loading:", loading.value);
   }
 };
 
@@ -332,6 +197,22 @@ const handleKeyPress = (event: KeyboardEvent) => {
 
         <div v-if="error" class="error-message">{{ error }}</div>
 
+        <div
+          v-if="
+            remainingAttempts !== null &&
+            remainingAttempts > 0 &&
+            remainingAttempts <= 3
+          "
+          class="attempts-warning"
+        >
+          Осталось попыток: {{ remainingAttempts }}
+        </div>
+
+        <div v-if="lockoutTime" class="lockout-message">
+          Блокировка до:
+          {{ new Date(Date.now() + lockoutTime).toLocaleTimeString() }}
+        </div>
+
         <div v-if="loading" class="loading-indicator">Обработка...</div>
 
         <button
@@ -355,7 +236,11 @@ const handleKeyPress = (event: KeyboardEvent) => {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: var(--back, #f5f5f5);
+  /* background: var(--back, #f5f5f5); */
+  background-image: url(/img/login/1.png);
+  background-position: center;
+  background-size: cover;
+  border-radius: 10px;
 }
 
 .login-box {
@@ -429,22 +314,45 @@ const handleKeyPress = (event: KeyboardEvent) => {
 }
 
 .error-message {
-  padding: 12px;
-  background: #fee;
-  border: 1px solid #fcc;
+  padding: 0px 12px;
+  background: #ffffff;
+  border: 0px solid #fcc;
   border-radius: 6px;
   color: var(--red, #d32f2f);
   font-size: 14px;
   text-align: center;
 }
 
-.loading-indicator {
-  padding: 12px;
-  background: #e3f2fd;
-  border: 1px solid #90caf9;
+.attempts-warning {
+  padding: 10px;
+  background: #fff4e6;
+  border: 1px solid #ffcc80;
   border-radius: 6px;
-  color: var(--blue, #1976d2);
-  font-size: 14px;
+  color: #ff9c5e;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.lockout-message {
+  padding: 10px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: var(--red, #d32f2f);
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.loading-indicator {
+  padding: 0 12px;
+  background: #ffffff;
+  border: 0px solid #90caf9;
+  border-radius: 6px;
+  color: var(--blue);
+  font-size: 12px;
   text-align: center;
 }
 

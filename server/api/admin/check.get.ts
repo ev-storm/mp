@@ -15,7 +15,6 @@ export default defineEventHandler(async (event) => {
       config.adminSecretKey || (process.env as any).ADMIN_SECRET_KEY;
 
     if (!adminSecretKey) {
-      console.error("ADMIN_SECRET_KEY не настроен");
       return {
         authenticated: false,
       };
@@ -32,7 +31,6 @@ export default defineEventHandler(async (event) => {
       authenticated: isValid,
     };
   } catch (error: any) {
-    console.error("Ошибка проверки аутентификации:", error);
     return {
       authenticated: false,
     };

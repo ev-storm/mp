@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { reactive, computed, ref, watch, onMounted } from "vue";
+import { reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { OrderField } from "~/types/order-fields";
 import {
   calculateTotalPrice,
   getQuantityFromFields,
 } from "~/types/order-fields";
+import {
+  getOrderFieldsConfigSync,
+  getPageMeta,
+  type PageConfigKey,
+} from "~/config/order-fields-config";
 
 definePageMeta({
   key: (route) => route.fullPath,
@@ -20,71 +25,90 @@ useHead({
   ],
 });
 
-// Конфигурация полей для буклетов
-const fields = reactive<OrderField[]>([
-  {
-    id: "material",
-    type: "dropdown",
-    label: "Материал",
-    placeholder: "Выберите материал",
-    options: [
-      { label: "Бумага самоклеящаяся", price: 100 },
-      { label: "Плёнка белая самоклеящаяся", price: 200 },
-      { label: "Плёнка прозрачная самоклеящаяся", price: 300 },
-      { label: "Монтажная пленка", price: 300 },
-    ],
-    value: null,
-  },
-  {
-    id: "deep",
-    type: "dropdown",
-    label: "Глубина надреза",
-    placeholder: "Выберите глубину",
-    options: [
-      { label: "Полная", price: 3 },
-      { label: "Частичная", price: 3 },
-    ],
-    value: null,
-  },
-  {
-    id: "form",
-    type: "dropdown",
-    label: "Форма выреза",
-    placeholder: "Выберите форму",
-    options: [
-      { label: "Прямоугольная", price: 10 },
-      { label: "Фигурная", price: 20 },
-    ],
-    value: null,
-  },
+// Конфигурация полей из единого файла конфигурации
+const pageKey: PageConfigKey = "stickers-print";
+const fields = reactive<OrderField[]>(getOrderFieldsConfigSync(pageKey));
 
-  {
-    id: "size-quantity",
-    type: "input",
-    label: "Размер",
-    placeholder: "Введите размер (мм)",
-    inputType: "text",
-    value: null,
-  },
-  {
-    id: "quantity",
-    type: "input",
-    label: "Тираж",
-    placeholder: "Введите количество",
-    inputType: "number",
-    min: 1,
-    value: null,
-  },
+// Функция для форматирования количества дней
+const formatProductionDays = (days: number | undefined): string => {
+  if (!days || days === 0) return "один рабочий день";
+  if (days === 1) return "один рабочий день";
+  if (days >= 2 && days <= 4) return `${days} рабочих дня`;
+  return `${days} рабочих дней`;
+};
 
-  {
-    id: "Mounting",
-    type: "toggle",
-    label: "Монтажная пленка",
-    tooltip: "Монтажная пленка...",
-    price: 300,
-    value: false,
-  },
-]);
+// Метаданные страницы (срок изготовления, описание) - реактивные, обновляются динамически
+const productionDays = ref<number | undefined>(1);
+const pageDescription = ref<string>("");
+
+// Обновить метаданные из localStorage
+const updatePageMeta = () => {
+  const meta = getPageMeta(pageKey);
+  const newProductionDays = meta.productionDays ?? 1;
+  const newDescription = meta.description || "";
+  
+  if (productionDays.value !== newProductionDays) {
+    productionDays.value = newProductionDays;
+  }
+  if (pageDescription.value !== newDescription) {
+    pageDescription.value = newDescription;
+  }
+};
+
+// Обновить поля из конфигурации при изменении в localStorage
+const updateFields = () => {
+  const newFields = getOrderFieldsConfigSync(pageKey);
+  if (newFields.length !== fields.length || JSON.stringify(newFields) !== JSON.stringify(fields)) {
+    fields.splice(0, fields.length, ...newFields);
+  }
+};
+
+// Слушаем изменения конфигурации
+const handleConfigUpdate = (e?: StorageEvent) => {
+  if (!e || e.key === "order-fields-config") {
+    updateFields();
+  }
+  if (!e || e.key === "order-fields-meta") {
+    updatePageMeta();
+  }
+};
+
+// Слушаем кастомное событие обновления конфигурации
+const handlePageConfigUpdated = () => {
+  updateFields();
+  updatePageMeta();
+};
+
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  updatePageMeta();
+  updateFields();
+  window.addEventListener("storage", handleConfigUpdate);
+  window.addEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.addEventListener("focus", () => {
+    updateFields();
+    updatePageMeta();
+  });
+  intervalId = setInterval(() => {
+    updateFields();
+    updatePageMeta();
+  }, 2000);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("storage", handleConfigUpdate);
+  window.removeEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.removeEventListener("focus", handleConfigUpdate);
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
+
+const productionDaysText = computed(() =>
+  formatProductionDays(productionDays.value)
+);
+
 
 // Заказать дизайн
 const isDesignActive = ref(false);
@@ -168,7 +192,7 @@ const submitOrder = async () => {
         <div class="tab-main">
           <div class="tab-option">
             <div class="tab-option-img">
-              <img src="/public/img/stick/1.png" alt="" />
+              <img src="/public/img/stick/1.png" alt="Изображение" />
             </div>
             <TabOptionMain :fields="fields" />
             <div class="tab-option-btn-con">
@@ -177,13 +201,13 @@ const submitOrder = async () => {
               </button>
               <button class="tab-option-btn">Примеры работ</button>
               <button class="tab-option-btn">
-                Срок изготовления: <span>один рабочий день</span>
+                Срок изготовления: <span>{{ productionDaysText }}</span>
               </button>
             </div>
           </div>
           <TabOrder
             title="Печать наклеек"
-            subTitle="Цветная печать и копирование  производится на современном профессиональном аппарате Xerox C75 press"
+            :subTitle="pageDescription || 'Цветная печать и копирование  производится на современном профессиональном аппарате Xerox C75 press'"
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"

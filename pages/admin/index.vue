@@ -40,6 +40,7 @@ const config = reactive<Record<PageConfigKey, OrderField[]>>(
 // Метаданные страниц (срок изготовления и другие параметры)
 interface PageMeta {
   productionDays?: number; // Количество дней для изготовления
+  description?: string; // Текст описания для страницы
 }
 
 const pageMeta = reactive<Record<PageConfigKey, PageMeta>>(
@@ -205,11 +206,32 @@ const loadConfig = () => {
           const parsed = JSON.parse(savedConfig);
           if (parsed && typeof parsed === "object") {
             // Мерджим сохраненную конфигурацию с дефолтной
-            // Это гарантирует, что новые страницы будут доступны
-            loadedConfig = {
-              ...orderFieldsConfig, // Дефолтная конфигурация (включая новые страницы)
-              ...parsed, // Сохраненные изменения перезапишут дефолтные
-            };
+            // Важно: пустые массивы из сохраненной конфигурации НЕ перезаписывают дефолтные значения
+            loadedConfig = { ...orderFieldsConfig }; // Начинаем с дефолтной
+
+            // Применяем сохраненные изменения только если они не пустые
+            for (const key in parsed) {
+              const pageKey = key as PageConfigKey;
+              const savedFields = parsed[pageKey];
+
+              // Если сохраненная конфигурация существует и не пустая, используем её
+              // Если пустая, но в дефолтной есть поля - оставляем дефолтную
+              if (Array.isArray(savedFields) && savedFields.length > 0) {
+                loadedConfig[pageKey] = savedFields;
+              } else if (
+                Array.isArray(savedFields) &&
+                savedFields.length === 0
+              ) {
+                // Если сохраненная конфигурация пустая, но в дефолтной есть поля - используем дефолтную
+                if (
+                  !orderFieldsConfig[pageKey] ||
+                  orderFieldsConfig[pageKey].length === 0
+                ) {
+                  loadedConfig[pageKey] = [];
+                }
+                // Иначе оставляем дефолтную (она уже в loadedConfig)
+              }
+            }
           }
         } catch {
           // В случае ошибки используем только дефолтную конфигурацию
@@ -218,7 +240,29 @@ const loadConfig = () => {
       }
     }
 
-    Object.assign(config, loadedConfig);
+    // Убеждаемся, что все ключи из дефолтной конфигурации присутствуют
+    // и правильно инициализированы в реактивном объекте
+    // Используем явное присваивание для каждого ключа, чтобы сохранить реактивность
+    for (const key in loadedConfig) {
+      const pageKey = key as PageConfigKey;
+      const fields = loadedConfig[pageKey] || [];
+
+      // Если ключ уже существует, обновляем массив через splice для сохранения реактивности
+      if (config[pageKey] && Array.isArray(config[pageKey])) {
+        config[pageKey].splice(0, config[pageKey].length, ...fields);
+      } else {
+        // Если ключа нет, создаем новый массив
+        config[pageKey] = [...fields];
+      }
+    }
+
+    // Убеждаемся, что все ключи из дефолтной конфигурации присутствуют
+    for (const key in orderFieldsConfig) {
+      const pageKey = key as PageConfigKey;
+      if (!(pageKey in config)) {
+        config[pageKey] = [];
+      }
+    }
 
     // Загружаем метаданные страниц из localStorage
     const META_STORAGE_KEY = "order-fields-meta";
@@ -231,7 +275,7 @@ const loadConfig = () => {
             Object.assign(pageMeta, parsedMeta);
           }
         } catch (error) {
-          console.warn("Не удалось загрузить метаданные страниц:", error);
+          // Игнорируем ошибку загрузки метаданных
         }
       }
     }
@@ -260,7 +304,29 @@ const saveConfig = () => {
   saving.value = true;
   message.value = null;
   try {
-    const success = saveConfigToStorage(config);
+    // Создаем копию конфигурации для сохранения, чтобы убедиться, что все ключи присутствуют
+    const configToSave: Record<PageConfigKey, OrderField[]> = {} as Record<
+      PageConfigKey,
+      OrderField[]
+    >;
+
+    // Копируем все ключи из текущей конфигурации
+    for (const key in config) {
+      const pageKey = key as PageConfigKey;
+      // Создаем глубокую копию массива полей
+      configToSave[pageKey] = JSON.parse(JSON.stringify(config[pageKey] || []));
+    }
+
+    // Убеждаемся, что все ключи из дефолтной конфигурации присутствуют
+    // Это важно для совместимости
+    for (const key in orderFieldsConfig) {
+      const pageKey = key as PageConfigKey;
+      if (!(pageKey in configToSave)) {
+        configToSave[pageKey] = [];
+      }
+    }
+
+    const success = saveConfigToStorage(configToSave);
 
     // Сохраняем метаданные страниц
     const META_STORAGE_KEY = "order-fields-meta";
@@ -273,7 +339,7 @@ const saveConfig = () => {
         });
         window.dispatchEvent(event);
       } catch (error) {
-        console.warn("Не удалось сохранить метаданные страниц:", error);
+        // Игнорируем ошибку сохранения метаданных
       }
     }
 
@@ -284,6 +350,14 @@ const saveConfig = () => {
       // Сбрасываем кэш
       clearConfigCache();
       clearMetaCache();
+
+      // Генерируем кастомное событие для обновления конфигурации на страницах
+      if (typeof window !== "undefined") {
+        const event = new CustomEvent("pageConfigUpdated", {
+          detail: { config: configToSave },
+        });
+        window.dispatchEvent(event);
+      }
     } else {
       message.value = {
         type: "error",
@@ -457,6 +531,44 @@ const currentProductionDays = computed({
   },
 });
 
+// Computed для текущего текста описания страницы
+const currentPageDescription = computed({
+  get: () => {
+    if (!selectedPage.value) return "";
+    if (!pageMeta[selectedPage.value]) {
+      initPageMeta(selectedPage.value);
+    }
+    return pageMeta[selectedPage.value]?.description || "";
+  },
+  set: (value: string) => {
+    if (!selectedPage.value) return;
+    if (!pageMeta[selectedPage.value]) {
+      initPageMeta(selectedPage.value);
+    }
+    pageMeta[selectedPage.value].description = value;
+  },
+});
+
+// Сохранить метаданные страницы
+const savePageMeta = () => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const META_STORAGE_KEY = "order-fields-meta";
+      localStorage.setItem(META_STORAGE_KEY, JSON.stringify(pageMeta));
+      // Генерируем кастомное событие для обновления метаданных на страницах
+      const event = new CustomEvent("pageMetaUpdated", {
+        detail: { pageMeta },
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      message.value = {
+        type: "error",
+        text: "Ошибка сохранения метаданных",
+      };
+    }
+  }
+};
+
 // Состояние открытых/закрытых карточек полей
 const expandedFields = ref<Set<number>>(new Set());
 
@@ -534,32 +646,15 @@ const getPageUrl = (pageKey: PageConfigKey | null): string | null => {
 // Функция выхода из системы
 const handleLogout = async () => {
   try {
-    const config = useRuntimeConfig();
-    // Используем внешний API, если настроен, иначе локальный
-    const authApiUrl = config.public.authApiUrl as string | undefined;
-    const apiUrl = authApiUrl ? `${authApiUrl}/logout` : "/api/admin/logout";
-
-    await $fetch(apiUrl, {
-      method: "POST",
-      credentials: "include", // Важно для работы с cookies
-    });
-
-    // Удаляем токен из localStorage для статического хостинга
-    if (authApiUrl && typeof window !== "undefined") {
-      localStorage.removeItem("admin-auth-token");
-    }
+    const { removeToken } = await import("~/utils/auth-client");
+    removeToken();
 
     // Перенаправляем на страницу входа
     await navigateTo("/admin/login");
   } catch (error) {
-    console.error("Ошибка выхода:", error);
-
     // Все равно удаляем токен и перенаправляем
-    const config = useRuntimeConfig();
-    const authApiUrl = config.public.authApiUrl as string | undefined;
-    if (authApiUrl && typeof window !== "undefined") {
-      localStorage.removeItem("admin-auth-token");
-    }
+    const { removeToken } = await import("~/utils/auth-client");
+    removeToken();
 
     await navigateTo("/admin/login");
   }
@@ -626,6 +721,7 @@ watch(
                 <img src="/assets/svg/exit.svg" alt="" />
               </a>
             </h2>
+
             <div class="page-header-actions">
               <div class="form-group page-settings">
                 <img src="/assets/svg/time-work.svg" alt="" />
@@ -1157,11 +1253,14 @@ watch(
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 10px 30px;
+  padding: 0 40px;
   border: 0px solid #e0e0e0;
   background: #ffffff;
   border-radius: 10px;
   height: 7vh;
+  position: sticky;
+  top: 0;
+  /* box-shadow: #00000010 0 10px 10px; */
 }
 
 .page-header-actions {
@@ -1203,18 +1302,24 @@ watch(
 }
 
 .fields-list {
-  display: flex;
-  gap: 30px 5px;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-flow: row;
+  gap: 15px;
+  width: 100%;
+  align-items: start;
+}
+
+.fields-list > * {
+  min-width: 0;
 }
 
 .field-card {
   border: 0px solid #ffffff;
   border-radius: 10px;
-  padding: 0 0px 0px 0px;
+  padding: 0;
   background: transparent;
-  width: 49%;
+  width: 100%;
 }
 
 .field-header {
@@ -1226,11 +1331,10 @@ watch(
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
-  padding: 10px 40px;
-  margin: 0;
+  padding: 5px 40px;
   border-radius: 10px;
   transition: background-color 0.2s;
-  box-shadow: #00000010 0 10px 10px;
+  /* box-shadow: #00000010 0 10px 10px; */
   background: #ffffff;
 }
 
@@ -1451,13 +1555,266 @@ watch(
   margin: 0;
 }
 
+/* Планшеты */
 @media (max-width: 1024px) {
   .admin-content {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    gap: 15px;
   }
 
   .admin-sidebar {
     position: static;
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+  }
+
+  .admin-main {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+  }
+
+  .fields-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Мобильные устройства */
+@media (max-width: 768px) {
+  .admin-content {
+    gap: 10px;
+    flex-direction: column-reverse;
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    padding: 0 10px;
+    height: auto;
+    max-height: 40vh;
+    position: relative;
+    top: 0;
+  }
+
+  .admin-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    height: auto;
+    min-height: auto;
+    justify-content: center;
+  }
+
+  .admin-actions button {
+    font-size: 12px;
+    padding: 6px 12px;
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .section-con {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .section-con .btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    flex: 1;
+    min-width: 10%;
+  }
+
+  .page-list {
+    max-height: 30vh;
+  }
+
+  .admin-main {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    padding: 0;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 15px;
+    height: auto;
+    min-height: auto;
+  }
+
+  .page-header h2 {
+    font-size: 16px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .page-header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .page-settings {
+    width: 100% !important;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .page-settings img {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .page-settings input {
+    flex: 1;
+  }
+
+  .fields-list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .field-header {
+    padding: 12px 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .field-header h3 {
+    font-size: 16px;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .field-header .btn-danger {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .field-form {
+    margin: 8px 10px;
+    padding: 15px;
+  }
+
+  .form-group-con {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .form-group {
+    width: 100% !important;
+  }
+
+  .option-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .option-label {
+    width: 100%;
+  }
+
+  .option-price {
+    width: 100%;
+  }
+
+  .btn {
+    font-size: 12px;
+    padding: 6px 15px;
+  }
+
+  .btn-small {
+    font-size: 11px;
+    padding: 4px 12px;
+  }
+
+  .empty-state,
+  .empty-fields {
+    padding: 40px 15px;
+  }
+
+  .empty-state p,
+  .empty-fields p {
+    font-size: 14px;
+  }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 480px) {
+  .admin-sidebar {
+    padding: 0 8px;
+  }
+
+  .admin-actions {
+    padding: 6px;
+  }
+
+  .admin-actions button {
+    font-size: 11px;
+    padding: 5px 10px;
+    min-width: 80px;
+  }
+
+  .section-con .btn {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .page-header {
+    padding: 2px 10px;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .page-header h2 {
+    font-size: 14px;
+  }
+
+  .field-header {
+    padding: 10px 12px;
+  }
+
+  .field-header h3 {
+    font-size: 14px;
+  }
+
+  .field-form {
+    margin: 6px 8px;
+    padding: 12px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+  }
+
+  .form-group input,
+  .form-group select {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .btn {
+    font-size: 11px;
+    padding: 5px 12px;
+  }
+
+  .delete-modal-content {
+    padding: 15px 20px;
+    margin: 20px;
+  }
+
+  .delete-modal-content h3 {
+    font-size: 18px;
+  }
+
+  .delete-modal-content p {
+    font-size: 13px;
   }
 }
 
