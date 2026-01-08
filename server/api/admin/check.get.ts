@@ -11,10 +11,10 @@ export default defineEventHandler(async (event) => {
     }
 
     const config = useRuntimeConfig();
-    const adminSecretKey =
-      config.adminSecretKey || (process.env as any).ADMIN_SECRET_KEY;
+    const adminSecretKey = config.adminSecretKey || process.env.ADMIN_SECRET_KEY;
 
     if (!adminSecretKey) {
+      console.error("ADMIN_SECRET_KEY не установлен в конфигурации");
       return {
         authenticated: false,
       };

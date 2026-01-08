@@ -37,18 +37,26 @@ const formatProductionDays = (days: number | undefined): string => {
   return `${days} рабочих дней`;
 };
 
-// Метаданные страницы (срок изготовления) - реактивные, обновляются динамически
+// Метаданные страницы (срок изготовления, изображение, описание) - реактивные, обновляются динамически
 const productionDays = ref<number | undefined>(1);
+const pageImage = ref<string>("");
 const pageDescription = ref<string>("");
+
+// Дефолтное изображение для страницы
+const defaultImage = "/img/tracing/1.png";
 
 // Обновить метаданные из localStorage
 const updatePageMeta = () => {
   const meta = getPageMeta(pageKey);
   const newProductionDays = meta.productionDays ?? 1;
+  const newImage = meta.imageUrl || defaultImage;
   const newDescription = meta.description || "";
 
   if (productionDays.value !== newProductionDays) {
     productionDays.value = newProductionDays;
+  }
+  if (pageImage.value !== newImage) {
+    pageImage.value = newImage;
   }
   if (pageDescription.value !== newDescription) {
     pageDescription.value = newDescription;
@@ -172,7 +180,7 @@ const submitOrder = async () => {
         <div class="tab-main">
           <div class="tab-option">
             <div class="tab-option-img">
-              <img src="/public/img/tracing/1.png" alt="Изображение" />
+              <img :src="pageImage || '/img/tracing/1.png'" alt="Изображение" />
             </div>
             <TabOptionMain :fields="fields" />
             <div class="tab-option-btn-con">

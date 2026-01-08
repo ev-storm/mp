@@ -98,9 +98,9 @@ export const useOrderSubmit = () => {
             : options.totalPrice,
       };
 
-      // Используем прямой импорт константы вместо runtimeConfig для статической генерации
-      const { TELEGRAM_API_URL } = await import('~/config/telegram');
-      const apiUrl = TELEGRAM_API_URL;
+      // Используем серверный endpoint для отправки заказов
+      const { ORDER_API_URL } = await import('~/config/telegram');
+      const apiUrl = ORDER_API_URL;
 
       if (!apiUrl) {
         throw new Error("API URL не настроен");

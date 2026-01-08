@@ -26,13 +26,14 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+    const config = useRuntimeConfig();
+    const BOT_TOKEN = config.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+    const CHAT_ID = config.telegramChatId || process.env.TELEGRAM_CHAT_ID;
 
     if (!BOT_TOKEN || !CHAT_ID) {
       throw createError({
         statusCode: 500,
-        statusMessage: "Конфигурация Telegram не настроена",
+        statusMessage: "Конфигурация Telegram не настроена. Установите TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в .env файле.",
       });
     }
 

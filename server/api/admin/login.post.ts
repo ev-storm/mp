@@ -21,17 +21,23 @@ export default defineEventHandler(async (event) => {
 
     // Читаем пароль и секретный ключ из переменных окружения
     const config = useRuntimeConfig();
-    const adminPassword =
-      (process.env as any).ADMIN_PASSWORD || config.adminPassword;
-    const adminSecretKey =
-      (process.env as any).ADMIN_SECRET_KEY || config.adminSecretKey;
+    const adminPassword = config.adminPassword || process.env.ADMIN_PASSWORD;
+    const adminSecretKey = config.adminSecretKey || process.env.ADMIN_SECRET_KEY;
 
     // Проверяем, что переменные окружения установлены
     if (!adminPassword || !adminSecretKey) {
+      console.error("Ошибка конфигурации:");
+      console.error("ADMIN_PASSWORD:", adminPassword ? "установлен" : "НЕ УСТАНОВЛЕН");
+      console.error("ADMIN_SECRET_KEY:", adminSecretKey ? "установлен" : "НЕ УСТАНОВЛЕН");
+      console.error("process.env.ADMIN_PASSWORD:", process.env.ADMIN_PASSWORD ? "есть" : "нет");
+      console.error("process.env.ADMIN_SECRET_KEY:", process.env.ADMIN_SECRET_KEY ? "есть" : "нет");
+      console.error("config.adminPassword:", config.adminPassword ? "есть" : "нет");
+      console.error("config.adminSecretKey:", config.adminSecretKey ? "есть" : "нет");
+      
       throw createError({
         statusCode: 500,
         statusMessage:
-          "Конфигурация администратора не настроена. Установите ADMIN_PASSWORD и ADMIN_SECRET_KEY в .env файле.",
+          "Конфигурация администратора не настроена. Установите ADMIN_PASSWORD и ADMIN_SECRET_KEY в .env файле на сервере и перезапустите приложение (pm2 restart nuxt-app).",
       });
     }
 

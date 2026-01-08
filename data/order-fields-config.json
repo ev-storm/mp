@@ -448,5 +448,9 @@
   "large-print": [],
   "large-scan": [],
   "large-plan": [],
-  "scan-print": []
+  "scan-print": [],
+  "photo-test": [],
+  "gift-test": [],
+  "publish-test": [],
+  "engraver-test": []
 }

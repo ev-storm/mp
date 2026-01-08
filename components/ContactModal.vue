@@ -153,7 +153,7 @@ const submitForm = async () => {
       });
     }
 
-    // Используем прямой импорт константы вместо runtimeConfig для статической генерации
+    // Используем серверный endpoint для отправки сообщений
     const { TELEGRAM_API_URL } = await import('~/config/telegram');
     const apiUrl = TELEGRAM_API_URL;
 
@@ -161,7 +161,7 @@ const submitForm = async () => {
       throw new Error("API URL не настроен");
     }
 
-    // Отправляем данные на Yandex Cloud Function
+    // Отправляем данные на серверный endpoint
     const response = await $fetch(apiUrl, {
       method: "POST",
       body: {
@@ -170,8 +170,8 @@ const submitForm = async () => {
         email: formData.value.email,
         comment: formData.value.comment,
         fileName: fileName,
-        fileBase64: fileBase64,
-        fileMimeType: fileMimeType,
+        // fileBase64 и fileMimeType не отправляются, так как серверный endpoint их не обрабатывает
+        // Файлы можно добавить позже, если потребуется
       },
     });
 

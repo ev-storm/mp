@@ -40,7 +40,8 @@ const config = reactive<Record<PageConfigKey, OrderField[]>>(
 // Метаданные страниц (срок изготовления и другие параметры)
 interface PageMeta {
   productionDays?: number; // Количество дней для изготовления
-  description?: string; // Текст описания для страницы
+  description?: string; // Текст описания для страницы (отображается в .tab-order-name p)
+  imageUrl?: string; // URL изображения для страницы (отображается в .tab-option-img img)
 }
 
 const pageMeta = reactive<Record<PageConfigKey, PageMeta>>(
@@ -188,54 +189,77 @@ const handleReload = () => {
 };
 
 // Загрузить конфигурацию
-const loadConfig = () => {
+const loadConfig = async () => {
   loading.value = true;
   message.value = null;
   try {
-    // Загружаем из localStorage или используем дефолтную
-    const STORAGE_KEY = "order-fields-config";
     // Всегда начинаем с дефолтной конфигурации
     let loadedConfig: Record<PageConfigKey, OrderField[]> = {
       ...orderFieldsConfig,
     };
 
-    if (typeof window !== "undefined" && window.localStorage) {
-      const savedConfig = localStorage.getItem(STORAGE_KEY);
-      if (savedConfig) {
-        try {
-          const parsed = JSON.parse(savedConfig);
-          if (parsed && typeof parsed === "object") {
-            // Мерджим сохраненную конфигурацию с дефолтной
-            // Важно: пустые массивы из сохраненной конфигурации НЕ перезаписывают дефолтные значения
-            loadedConfig = { ...orderFieldsConfig }; // Начинаем с дефолтной
+    // Пытаемся загрузить с сервера
+    try {
+      const response = await $fetch<{
+        success: boolean;
+        data?: Record<PageConfigKey, OrderField[]>;
+        meta?: Record<PageConfigKey, PageMeta>;
+      }>("/api/order-fields-config");
+      if (response.success && response.data) {
+        // Используем конфигурацию с сервера
+        loadedConfig = response.data;
+        // Также сохраняем в localStorage как кэш
+        saveConfigToStorage(loadedConfig);
 
-            // Применяем сохраненные изменения только если они не пустые
-            for (const key in parsed) {
-              const pageKey = key as PageConfigKey;
-              const savedFields = parsed[pageKey];
+        // Загружаем метаданные с сервера
+        if (response.meta && typeof response.meta === "object") {
+          Object.assign(pageMeta, response.meta);
+        }
+      }
+    } catch (apiError) {
+      // Если не удалось загрузить с сервера, используем localStorage как fallback
+      console.warn(
+        "Не удалось загрузить с сервера, используем localStorage:",
+        apiError
+      );
+      const STORAGE_KEY = "order-fields-config";
 
-              // Если сохраненная конфигурация существует и не пустая, используем её
-              // Если пустая, но в дефолтной есть поля - оставляем дефолтную
-              if (Array.isArray(savedFields) && savedFields.length > 0) {
-                loadedConfig[pageKey] = savedFields;
-              } else if (
-                Array.isArray(savedFields) &&
-                savedFields.length === 0
-              ) {
-                // Если сохраненная конфигурация пустая, но в дефолтной есть поля - используем дефолтную
-                if (
-                  !orderFieldsConfig[pageKey] ||
-                  orderFieldsConfig[pageKey].length === 0
+      if (typeof window !== "undefined" && window.localStorage) {
+        const savedConfig = localStorage.getItem(STORAGE_KEY);
+        if (savedConfig) {
+          try {
+            const parsed = JSON.parse(savedConfig);
+            if (parsed && typeof parsed === "object") {
+              // Мерджим сохраненную конфигурацию с дефолтной
+              loadedConfig = { ...orderFieldsConfig }; // Начинаем с дефолтной
+
+              // Применяем сохраненные изменения только если они не пустые
+              for (const key in parsed) {
+                const pageKey = key as PageConfigKey;
+                const savedFields = parsed[pageKey];
+
+                // Если сохраненная конфигурация существует и не пустая, используем её
+                if (Array.isArray(savedFields) && savedFields.length > 0) {
+                  loadedConfig[pageKey] = savedFields;
+                } else if (
+                  Array.isArray(savedFields) &&
+                  savedFields.length === 0
                 ) {
-                  loadedConfig[pageKey] = [];
+                  // Если сохраненная конфигурация пустая, но в дефолтной есть поля - используем дефолтную
+                  if (
+                    !orderFieldsConfig[pageKey] ||
+                    orderFieldsConfig[pageKey].length === 0
+                  ) {
+                    loadedConfig[pageKey] = [];
+                  }
+                  // Иначе оставляем дефолтную (она уже в loadedConfig)
                 }
-                // Иначе оставляем дефолтную (она уже в loadedConfig)
               }
             }
+          } catch {
+            // В случае ошибки используем только дефолтную конфигурацию
+            loadedConfig = { ...orderFieldsConfig };
           }
-        } catch {
-          // В случае ошибки используем только дефолтную конфигурацию
-          loadedConfig = { ...orderFieldsConfig };
         }
       }
     }
@@ -300,7 +324,7 @@ const loadConfig = () => {
 };
 
 // Сохранить конфигурацию
-const saveConfig = () => {
+const saveConfig = async () => {
   saving.value = true;
   message.value = null;
   try {
@@ -326,43 +350,80 @@ const saveConfig = () => {
       }
     }
 
-    const success = saveConfigToStorage(configToSave);
+    try {
+      // Сохраняем на сервер через API (конфигурация + метаданные)
+      const response = await $fetch<{ success: boolean; message?: string }>(
+        "/api/order-fields-config",
+        {
+          method: "POST",
+          body: { config: configToSave, meta: pageMeta },
+        } as any
+      );
 
-    // Сохраняем метаданные страниц
-    const META_STORAGE_KEY = "order-fields-meta";
-    if (typeof window !== "undefined" && window.localStorage) {
-      try {
-        localStorage.setItem(META_STORAGE_KEY, JSON.stringify(pageMeta));
-        // Генерируем кастомное событие для обновления метаданных на страницах
-        const event = new CustomEvent("pageMetaUpdated", {
-          detail: { pageMeta },
-        });
-        window.dispatchEvent(event);
-      } catch (error) {
-        // Игнорируем ошибку сохранения метаданных
+      if (response.success) {
+        // Также сохраняем в localStorage как fallback/кэш
+        saveConfigToStorage(configToSave);
+
+        // Сохраняем метаданные страниц
+        const META_STORAGE_KEY = "order-fields-meta";
+        if (typeof window !== "undefined" && window.localStorage) {
+          try {
+            localStorage.setItem(META_STORAGE_KEY, JSON.stringify(pageMeta));
+            // Генерируем кастомное событие для обновления метаданных на страницах
+            const event = new CustomEvent("pageMetaUpdated", {
+              detail: { pageMeta },
+            });
+            window.dispatchEvent(event);
+          } catch (error) {
+            // Игнорируем ошибку сохранения метаданных
+          }
+        }
+
+        // Показываем Toast
+        toastMessage.value = "Конфигурация успешно сохранена на сервере";
+        showToast.value = true;
+        // Сбрасываем кэш
+        clearConfigCache();
+        clearMetaCache();
+
+        // Генерируем кастомное событие для обновления конфигурации на страницах
+        if (typeof window !== "undefined") {
+          const event = new CustomEvent("pageConfigUpdated", {
+            detail: { config: configToSave },
+          });
+          window.dispatchEvent(event);
+        }
+      } else {
+        throw new Error("Не удалось сохранить на сервере");
       }
-    }
+    } catch (apiError: any) {
+      // Fallback: сохраняем только в localStorage, если API недоступен
+      console.warn(
+        "API недоступен, сохраняем только в localStorage:",
+        apiError
+      );
+      const success = saveConfigToStorage(configToSave);
 
-    if (success) {
-      // Показываем Toast вместо message-success
-      toastMessage.value = "Конфигурация успешно сохранена";
+      if (!success) {
+        throw new Error("Ошибка сохранения в localStorage");
+      }
+
+      // Сохраняем метаданные
+      const META_STORAGE_KEY = "order-fields-meta";
+      if (typeof window !== "undefined" && window.localStorage) {
+        try {
+          localStorage.setItem(META_STORAGE_KEY, JSON.stringify(pageMeta));
+          const event = new CustomEvent("pageMetaUpdated", {
+            detail: { pageMeta },
+          });
+          window.dispatchEvent(event);
+        } catch (error) {
+          // Игнорируем ошибку
+        }
+      }
+
+      toastMessage.value = "Сохранено локально. API недоступен";
       showToast.value = true;
-      // Сбрасываем кэш
-      clearConfigCache();
-      clearMetaCache();
-
-      // Генерируем кастомное событие для обновления конфигурации на страницах
-      if (typeof window !== "undefined") {
-        const event = new CustomEvent("pageConfigUpdated", {
-          detail: { config: configToSave },
-        });
-        window.dispatchEvent(event);
-      }
-    } else {
-      message.value = {
-        type: "error",
-        text: "Ошибка сохранения в localStorage",
-      };
     }
   } catch (error: any) {
     message.value = {
@@ -513,6 +574,63 @@ const currentFields = computed(() => {
   return config[selectedPage.value] || [];
 });
 
+// Получить дефолтное изображение для страницы
+const getDefaultPageImage = (pageKey: PageConfigKey | null): string => {
+  if (!pageKey) return "/img/repli/1.png";
+
+  const defaultImages: Record<PageConfigKey, string> = {
+    tracing: "/img/tracing/1.png",
+    catalogs: "/img/catalogs/1.png",
+    replication: "/img/repli/1.png",
+    scan: "/img/scan/1.png",
+    diplom: "/img/bind/1.png", // Используем bind/1.png для diplom
+    "booklet-laser": "/img/repli/1.png", // Дефолт, если нет отдельного изображения
+    "booklet-ofset": "/img/repli/1.png",
+    "visit-card-laser": "/img/visit/1.png",
+    "visit-card-ofset": "/img/visit/2.png",
+    "visit-card-uf": "/img/visit/3.png",
+    "stickers-print": "/img/stick/1.png",
+    "plotter-paper": "/img/stick/2.png",
+    "bind-plastic": "/img/bind/2.png",
+    "bind-metal": "/img/bind/3.png",
+    "bind-hard": "/img/bind/1.png",
+    "lamination-doc": "/img/lam/1.png",
+    "lamination-large": "/img/lam/2.png",
+    "large-print": "/img/large/1.png",
+    "large-scan": "/img/large/2.png",
+    "large-plan": "/img/large/3.png",
+    "scan-print": "/img/scan/2.png",
+    "photo-test": "/img/repli/1.png",
+    "gift-test": "/img/repli/1.png",
+    "publish-test": "/img/repli/1.png",
+    "engraver-test": "/img/repli/1.png",
+  };
+
+  return defaultImages[pageKey] || "/img/repli/1.png";
+};
+
+// Computed для текущего изображения страницы
+const currentPageImage = computed({
+  get: () => {
+    if (!selectedPage.value) return "";
+    if (!pageMeta[selectedPage.value]) {
+      initPageMeta(selectedPage.value);
+    }
+    // Используем сохраненное изображение или дефолтное
+    return (
+      pageMeta[selectedPage.value]?.imageUrl ||
+      getDefaultPageImage(selectedPage.value)
+    );
+  },
+  set: (value: string) => {
+    if (!selectedPage.value) return;
+    if (!pageMeta[selectedPage.value]) {
+      initPageMeta(selectedPage.value);
+    }
+    pageMeta[selectedPage.value].imageUrl = value;
+  },
+});
+
 // Computed для безопасного доступа к productionDays с getter/setter
 const currentProductionDays = computed({
   get: () => {
@@ -549,23 +667,99 @@ const currentPageDescription = computed({
   },
 });
 
-// Сохранить метаданные страницы
+// Сохранить метаданные страницы (только в localStorage и событие, основное сохранение через saveConfig)
 const savePageMeta = () => {
-  if (typeof window !== "undefined" && window.localStorage) {
-    try {
-      const META_STORAGE_KEY = "order-fields-meta";
-      localStorage.setItem(META_STORAGE_KEY, JSON.stringify(pageMeta));
-      // Генерируем кастомное событие для обновления метаданных на страницах
-      const event = new CustomEvent("pageMetaUpdated", {
-        detail: { pageMeta },
-      });
-      window.dispatchEvent(event);
-    } catch (error) {
+  // Метаданные сохраняются вместе с конфигурацией через saveConfig()
+  // Здесь только обновляем событие для синхронизации в той же вкладке
+  if (typeof window !== "undefined") {
+    const META_STORAGE_KEY = "order-fields-meta";
+    if (window.localStorage) {
+      try {
+        localStorage.setItem(META_STORAGE_KEY, JSON.stringify(pageMeta));
+      } catch (error) {
+        console.warn("Ошибка сохранения метаданных в localStorage:", error);
+      }
+    }
+    // Генерируем кастомное событие для обновления метаданных на страницах
+    const event = new CustomEvent("pageMetaUpdated", {
+      detail: { pageMeta },
+    });
+    window.dispatchEvent(event);
+  }
+};
+
+// Ref для input файла изображения
+const imageInputRef = ref<HTMLInputElement | null>(null);
+
+// Обработчик клика по контейнеру изображения
+const handleImageClick = () => {
+  if (typeof window !== "undefined" && imageInputRef.value) {
+    imageInputRef.value.click();
+  }
+};
+
+// Обработчик загрузки изображения
+const handleImageUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file || !selectedPage.value) return;
+
+  // Проверяем тип файла
+  if (!file.type.startsWith("image/")) {
+    message.value = {
+      type: "error",
+      text: "Пожалуйста, выберите изображение",
+    };
+    return;
+  }
+
+  // Проверяем размер файла (максимум 10 МБ)
+  if (file.size > 10 * 1024 * 1024) {
+    message.value = {
+      type: "error",
+      text: "Размер файла не должен превышать 10 МБ",
+    };
+    return;
+  }
+
+  try {
+    // Читаем файл как base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64Data = e.target?.result as string;
+      if (!base64Data) {
+        message.value = {
+          type: "error",
+          text: "Ошибка при чтении файла",
+        };
+        return;
+      }
+
+      // Сохраняем base64 в метаданные страницы
+      currentPageImage.value = base64Data;
+      savePageMeta();
+
+      toastMessage.value =
+        "Изображение загружено. Нажмите 'Сохранить' для применения изменений.";
+      showToast.value = true;
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
+    };
+
+    reader.onerror = () => {
       message.value = {
         type: "error",
-        text: "Ошибка сохранения метаданных",
+        text: "Ошибка при чтении файла",
       };
-    }
+    };
+
+    reader.readAsDataURL(file);
+  } catch (error: any) {
+    message.value = {
+      type: "error",
+      text: error.message || "Ошибка при загрузке изображения",
+    };
   }
 };
 
@@ -646,16 +840,16 @@ const getPageUrl = (pageKey: PageConfigKey | null): string | null => {
 // Функция выхода из системы
 const handleLogout = async () => {
   try {
-    const { removeToken } = await import("~/utils/auth-client");
-    removeToken();
+    // Используем серверный endpoint для выхода
+    // Cookie удаляется автоматически сервером
+    await $fetch("/api/admin/logout", {
+      method: "POST",
+    });
 
     // Перенаправляем на страницу входа
     await navigateTo("/admin/login");
   } catch (error) {
-    // Все равно удаляем токен и перенаправляем
-    const { removeToken } = await import("~/utils/auth-client");
-    removeToken();
-
+    // В случае ошибки все равно перенаправляем на вход
     await navigateTo("/admin/login");
   }
 };
@@ -740,6 +934,28 @@ watch(
                 + Добавить поле
               </button>
             </div>
+          </div>
+
+          <div class="page-text-con">
+            <div class="page-text-img-con" @click="handleImageClick">
+              <div class="page-text-img-con-2">
+                <img src="/img/login/2.svg" alt="" />
+              </div>
+              <img :src="currentPageImage" alt="Изображение страницы" />
+              <input
+                ref="imageInputRef"
+                class="page-text-img"
+                type="file"
+                accept="image/*"
+                @change="handleImageUpload"
+              />
+            </div>
+            <textarea
+              class="page-text-text"
+              v-model="currentPageDescription"
+              @input="savePageMeta"
+              placeholder="Введите описание страницы (будет отображаться в .tab-order-name p)"
+            ></textarea>
           </div>
 
           <!-- Настройки страницы -->
@@ -1488,6 +1704,72 @@ watch(
 
 .btn-primary:hover:not(:disabled) {
   background: #4dc796;
+}
+.page-text-con {
+  background: var(--white);
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  height: 10vh;
+  justify-content: space-between;
+  margin: 10px 0;
+  padding: 10px;
+  transition: all 0.3s ease-in-out;
+}
+.page-text-con input {
+  display: none;
+}
+.page-text-img-con-2 img {
+  height: 40%;
+  width: auto;
+}
+.page-text-img-con {
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+.page-text-text {
+  background: var(--back);
+  border: 0 solid #000;
+  border-radius: 8px;
+  color: var(--grey);
+  font-size: 12px;
+  padding: 10px 40px;
+  resize: none;
+  width: 100%;
+}
+.page-text-img-con-2 {
+  align-items: center;
+  background: #00000070;
+  cursor: pointer;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  opacity: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+.page-text-img-con img {
+  height: 100%;
+  -o-object-fit: cover;
+  object-fit: cover;
+  width: 100%;
+}
+.page-text-img-con-2 img {
+  height: 40%;
+  width: auto;
+}
+.page-text-img-con:hover .page-text-img-con-2 {
+  opacity: 1;
+}
+.page-text-con:hover {
+  height: 30vh;
 }
 
 .btn-secondary {

@@ -1,16 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import {
-  verifyPassword,
-  generateAuthToken,
-  saveToken,
-  getToken,
-  isTokenExpired,
-  checkBruteForceProtection,
-  recordFailedAttempt,
-  clearFailedAttempts,
-} from "~/utils/auth-client";
 
 useHead({
   title: "Вход в админ-панель",
@@ -26,17 +16,21 @@ useHead({
 const password = ref("");
 const loading = ref(false);
 const error = ref("");
-const lockoutTime = ref<number | null>(null);
 const remainingAttempts = ref<number | null>(null);
 const router = useRouter();
 const route = useRoute();
 
 // Проверка, если уже авторизован, перенаправляем
-onMounted(() => {
+onMounted(async () => {
   if (process.client) {
-    const token = getToken();
-    if (token && !isTokenExpired()) {
-      router.push("/admin");
+    try {
+      // Проверяем авторизацию через серверный endpoint
+      const response = await $fetch("/api/admin/check");
+      if (response.authenticated) {
+        router.push("/admin");
+      }
+    } catch {
+      // Если не авторизован, остаемся на странице входа
     }
   }
 });
@@ -48,119 +42,44 @@ const handleLogin = async () => {
     return;
   }
 
-  // Проверяем защиту от брутфорса
-  const bruteForceCheck = checkBruteForceProtection();
-  if (!bruteForceCheck.allowed) {
-    if (bruteForceCheck.lockoutTime) {
-      const minutes = Math.ceil(bruteForceCheck.lockoutTime / 60000);
-      error.value = `Слишком много неудачных попыток. Попробуйте снова через ${minutes} ${
-        minutes === 1 ? "минуту" : minutes < 5 ? "минуты" : "минут"
-      }.`;
-      lockoutTime.value = bruteForceCheck.lockoutTime;
-    } else {
-      error.value = "Доступ временно заблокирован";
-    }
-    return;
-  }
-
-  // Устанавливаем remainingAttempts только если осталось 3 или меньше попыток
-  if (bruteForceCheck.remainingAttempts <= 3) {
-    remainingAttempts.value = bruteForceCheck.remainingAttempts;
-  } else {
-    remainingAttempts.value = null;
-  }
-
   loading.value = true;
   error.value = "";
+  remainingAttempts.value = null;
 
   try {
-    const config = useRuntimeConfig();
+    // Используем серверный endpoint для авторизации
+    // Cookies устанавливаются автоматически сервером
+    const response = await $fetch("/api/admin/login", {
+      method: "POST",
+      body: {
+        password: password.value,
+      },
+    });
 
-    // Получаем хеш пароля и секретный ключ из конфигурации
-    const passwordHash = (config.public as any).adminPasswordHash as
-      | string
-      | undefined;
-    const secretKey = (config.public as any).adminSecretKey as
-      | string
-      | undefined;
-
-    // Проверяем, настроена ли клиентская аутентификация
-    if (
-      !passwordHash ||
-      !secretKey ||
-      passwordHash === "" ||
-      secretKey === ""
-    ) {
-      error.value =
-        "Аутентификация не настроена. Настройте ADMIN_PASSWORD_HASH и ADMIN_SECRET_KEY в .env файле.";
-      loading.value = false;
-      return;
+    if (response.success) {
+      // Успешный вход - перенаправляем на админ-панель
+      const redirectPath = (route.query.redirect as string) || "/admin";
+      await router.push(redirectPath);
     }
-
-    // Проверяем пароль
-    const isValid = await verifyPassword(password.value, passwordHash!);
-
-    if (!isValid) {
-      // Регистрируем неудачную попытку
-      recordFailedAttempt();
-
-      // Проверяем оставшиеся попытки
-      const newCheck = checkBruteForceProtection();
-
-      if (newCheck.remainingAttempts > 0) {
-        // Показываем предупреждение только если осталось 3 или меньше попыток
-        if (newCheck.remainingAttempts <= 3) {
-          remainingAttempts.value = newCheck.remainingAttempts;
-          error.value = `Неверный пароль. Осталось попыток: ${newCheck.remainingAttempts}`;
-        } else {
-          remainingAttempts.value = null;
-          error.value = "Неверный пароль";
-        }
-      } else {
-        remainingAttempts.value = null;
-        error.value =
-          "Слишком много неудачных попыток. Попробуйте снова через 15 минут.";
-        lockoutTime.value = newCheck.lockoutTime || 15 * 60 * 1000;
-      }
-
-      // Добавляем задержку для усложнения брутфорса
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000 + Math.random() * 1000)
-      );
-
-      loading.value = false;
-      return;
-    }
-
-    // Пароль верный - очищаем счетчик попыток
-    clearFailedAttempts();
-    remainingAttempts.value = null;
-    lockoutTime.value = null;
-
-    // Генерируем токен
-    const token = await generateAuthToken(password.value, secretKey!);
-    saveToken(token);
-
-    // Перенаправляем на страницу админки
-    const redirectPath = (route.query.redirect as string) || "/admin";
-    setTimeout(() => {
-      window.location.href = redirectPath;
-    }, 100);
   } catch (err: any) {
+    // Обработка ошибок от сервера
     let errorMessage = "Ошибка входа. Проверьте пароль.";
 
-    if (err.message) {
-      // Проверяем ошибки связанные с crypto API
-      if (err.message.includes("crypto") || err.message.includes("HTTPS")) {
-        errorMessage =
-          "Аутентификация требует HTTPS. Убедитесь, что сайт работает по защищенному соединению.";
-      } else if (err.statusMessage) {
-        errorMessage = err.statusMessage;
-      } else {
-        errorMessage = err.message;
-      }
-    } else if (err.statusMessage) {
+    if (err.statusMessage) {
       errorMessage = err.statusMessage;
+    } else if (err.message) {
+      errorMessage = err.message;
+    } else if (err.data?.message) {
+      errorMessage = err.data.message;
+    }
+
+    // Если сервер вернул информацию о попытках
+    if (err.data?.remainingAttempts !== undefined) {
+      const attempts = err.data.remainingAttempts;
+      if (attempts > 0 && attempts <= 3) {
+        remainingAttempts.value = attempts;
+        errorMessage = `Неверный пароль. Осталось попыток: ${attempts}`;
+      }
     }
 
     error.value = errorMessage;

@@ -4,19 +4,15 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return;
   }
 
-  // Для статического хостинга используем клиентскую проверку
-  if (process.client) {
-    const { getToken, isTokenExpired } = await import("~/utils/auth-client");
-    const token = getToken();
+  // Проверяем авторизацию через серверный endpoint
+  try {
+    const response = await $fetch("/api/admin/check");
     
-    if (!token || isTokenExpired()) {
+    if (!response.authenticated) {
       return navigateTo("/admin/login");
     }
-    return;
-  }
-
-  // Для SSR - перенаправляем на вход (клиентская аутентификация работает только на клиенте)
-  if (process.server) {
+  } catch (error) {
+    // Если ошибка при проверке, перенаправляем на вход
     return navigateTo("/admin/login");
   }
 });

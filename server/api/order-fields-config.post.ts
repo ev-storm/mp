@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const body = await readBody(event);
-    const { config } = body;
+    const { config, meta } = body;
 
     if (!config || typeof config !== "object") {
       throw createError({
@@ -25,14 +25,21 @@ export default defineEventHandler(async (event) => {
     // Сохраняем конфигурацию в JSON файл
     // В продакшене лучше использовать базу данных
     const dataDir = join(process.cwd(), "data");
-    const configPath = join(dataDir, "order-fields-config.json");
     
     // Создаем директорию data, если её нет
     if (!existsSync(dataDir)) {
       await mkdir(dataDir, { recursive: true });
     }
     
+    // Сохраняем конфигурацию полей
+    const configPath = join(dataDir, "order-fields-config.json");
     await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+
+    // Сохраняем метаданные страниц (если переданы)
+    if (meta && typeof meta === "object") {
+      const metaPath = join(dataDir, "order-fields-meta.json");
+      await writeFile(metaPath, JSON.stringify(meta, null, 2), "utf-8");
+    }
 
     return {
       success: true,
