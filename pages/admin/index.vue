@@ -357,8 +357,13 @@ const saveConfig = async () => {
         {
           method: "POST",
           body: { config: configToSave, meta: pageMeta },
+          credentials: "include", // Важно: передаем cookies
         } as any
-      );
+      ).catch((error: any) => {
+        console.error("Ошибка при сохранении на сервер:", error);
+        // Пробрасываем ошибку дальше
+        throw error;
+      });
 
       if (response.success) {
         // Также сохраняем в localStorage как fallback/кэш
@@ -426,9 +431,24 @@ const saveConfig = async () => {
       showToast.value = true;
     }
   } catch (error: any) {
+    console.error("Ошибка сохранения конфигурации:", error);
+    let errorMessage = "Неизвестная ошибка";
+
+    if (error.statusCode === 401) {
+      errorMessage = "Требуется авторизация. Пожалуйста, войдите заново.";
+    } else if (error.statusCode === 500) {
+      errorMessage = "Ошибка сервера. Проверьте логи на сервере.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    } else if (error.statusMessage) {
+      errorMessage = error.statusMessage;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+
     message.value = {
       type: "error",
-      text: `Ошибка сохранения: ${error.message || "Неизвестная ошибка"}`,
+      text: `Ошибка сохранения: ${errorMessage}`,
     };
   } finally {
     saving.value = false;

@@ -2,6 +2,27 @@
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { createHash } from "crypto";
+
+// Функция проверки аутентификации
+const checkAuth = (event: any): boolean => {
+  try {
+    const authToken = getCookie(event, "admin-auth-token");
+    if (!authToken) return false;
+
+    const config = useRuntimeConfig();
+    const adminSecretKey = config.adminSecretKey || process.env.ADMIN_SECRET_KEY;
+    if (!adminSecretKey) return false;
+
+    const expectedToken = createHash("sha256")
+      .update(adminSecretKey + "-admin")
+      .digest("hex");
+
+    return authToken === expectedToken;
+  } catch {
+    return false;
+  }
+};
 
 export default defineEventHandler(async (event) => {
   if (event.node.req.method !== "POST") {
@@ -11,11 +32,27 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Проверяем аутентификацию для POST запросов
+  const isAuthenticated = checkAuth(event);
+  if (!isAuthenticated) {
+    console.error("POST /api/order-fields-config: Не авторизован");
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Требуется аутентификация",
+    });
+  }
+
   try {
     const body = await readBody(event);
     const { config, meta } = body;
 
+    console.log("POST /api/order-fields-config: Получен запрос", {
+      hasConfig: !!config,
+      hasMeta: !!meta,
+    });
+
     if (!config || typeof config !== "object") {
+      console.error("POST /api/order-fields-config: Неверный формат данных");
       throw createError({
         statusCode: 400,
         statusMessage: "Неверный формат данных",
@@ -41,12 +78,13 @@ export default defineEventHandler(async (event) => {
       await writeFile(metaPath, JSON.stringify(meta, null, 2), "utf-8");
     }
 
+    console.log("POST /api/order-fields-config: Успешно сохранено");
     return {
       success: true,
       message: "Конфигурация успешно сохранена",
     };
   } catch (error: any) {
-    console.error("Error saving order fields config:", error);
+    console.error("POST /api/order-fields-config: Ошибка сохранения:", error);
     throw createError({
       statusCode: error.statusCode || 500,
       statusMessage: error.statusMessage || "Ошибка сохранения конфигурации",
