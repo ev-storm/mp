@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { reactive, computed, ref, watch, onMounted } from "vue";
+import { reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { OrderField } from "~/types/order-fields";
 import {
   calculateTotalPrice,
   getQuantityFromFields,
 } from "~/types/order-fields";
+import {
+  getOrderFieldsConfigSync,
+  getPageMeta,
+  type PageConfigKey,
+} from "~/config/order-fields-config";
 
 definePageMeta({
   key: (route) => route.fullPath,
@@ -19,8 +24,110 @@ useHead({
   ],
 });
 
-// Конфигурация полей для буклетов
-const fields = reactive<OrderField[]>([
+// Конфигурация полей из единого файла конфигурации
+const pageKey: PageConfigKey = "lamination-doc";
+const fields = reactive<OrderField[]>(getOrderFieldsConfigSync(pageKey));
+
+// Функция для форматирования количества дней
+const formatProductionDays = (days: number | undefined): string => {
+  if (!days || days === 0) return "один рабочий день";
+  if (days === 1) return "один рабочий день";
+  if (days >= 2 && days <= 4) return `${days} рабочих дня`;
+  return `${days} рабочих дней`;
+};
+
+// Метаданные страницы (срок изготовления, изображение, описание) - реактивные, обновляются динамически
+const productionDays = ref<number | undefined>(1);
+const pageImage = ref<string>("");
+const pageDescription = ref<string>("");
+
+// Дефолтное изображение для страницы
+const defaultImage = "/img/lam/1.png";
+
+// Обновить метаданные из localStorage
+const updatePageMeta = () => {
+  const meta = getPageMeta(pageKey);
+  const newProductionDays = meta.productionDays ?? 1;
+  const newImage = meta.imageUrl || defaultImage;
+  const newDescription = meta.description || "";
+
+  if (productionDays.value !== newProductionDays) {
+    productionDays.value = newProductionDays;
+  }
+  if (pageImage.value !== newImage) {
+    pageImage.value = newImage;
+  }
+  if (pageDescription.value !== newDescription) {
+    pageDescription.value = newDescription;
+  }
+};
+
+// Обновить поля из конфигурации при изменении в localStorage
+const updateFields = () => {
+  const newFields = getOrderFieldsConfigSync(pageKey);
+  if (newFields.length !== fields.length || JSON.stringify(newFields) !== JSON.stringify(fields)) {
+    fields.splice(0, fields.length, ...newFields);
+  }
+};
+
+// Слушаем изменения конфигурации
+const handleConfigUpdate = (e?: StorageEvent) => {
+  if (!e || e.key === "order-fields-config") {
+    updateFields();
+  }
+  if (!e || e.key === "order-fields-meta") {
+    updatePageMeta();
+  }
+};
+
+// Слушаем кастомное событие обновления конфигурации
+const handlePageConfigUpdated = () => {
+  updateFields();
+  updatePageMeta();
+};
+
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  updatePageMeta();
+  updateFields();
+  // Слушаем кастомное событие обновления метаданных (когда админ-панель сохраняет данные в той же вкладке)
+  window.addEventListener("pageMetaUpdated", updatePageMeta);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "order-fields-config") {
+      updateFields();
+    }
+    if (e.key === "order-fields-meta") {
+      updatePageMeta();
+    }
+  });
+  window.addEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.addEventListener("focus", () => {
+    updateFields();
+    updatePageMeta();
+  });
+  intervalId = setInterval(() => {
+    updateFields();
+    updatePageMeta();
+  }, 2000);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("pageMetaUpdated", updatePageMeta);
+  window.removeEventListener("storage", handleConfigUpdate);
+  window.removeEventListener("pageConfigUpdated", handlePageConfigUpdated);
+  window.removeEventListener("focus", handleConfigUpdate);
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
+
+const productionDaysText = computed(() =>
+  formatProductionDays(productionDays.value)
+);
+
+// Старая конфигурация полей (закомментирована, используется из конфига)
+/*const fields = reactive<OrderField[]>([
   {
     id: "format",
     type: "dropdown",
@@ -56,7 +163,7 @@ const fields = reactive<OrderField[]>([
     min: 1,
     value: null,
   },
-]);
+]);*/
 
 // Заказать дизайн
 const isDesignActive = ref(false);
@@ -147,7 +254,7 @@ const submitOrder = async () => {
         <div class="tab-main">
           <div class="tab-option">
             <div class="tab-option-img">
-              <img src="/public/img/lam/1.png" alt="" />
+              <img :src="pageImage || '/img/lam/1.png'" alt="Изображение" />
             </div>
             <TabOptionMain :fields="fields" />
             <div class="tab-option-btn-con">
@@ -156,18 +263,13 @@ const submitOrder = async () => {
               </button>
               <button class="tab-option-btn">Примеры работ</button>
               <button class="tab-option-btn">
-                Срок изготовления: <span>один рабочий день</span>
+                Срок изготовления: <span>{{ productionDaysText }}</span>
               </button>
             </div>
           </div>
           <TabOrder
             title="Ламинирование документов"
-            subTitle="Преимущества ламинирования документов :<br>
-- Укрепление и сохранение цвета и контрастности изображения;<br>
-- Долговременная защита документов, которые нуждаются в частом использовании, становятся практически неуязвимыми;<br>
-- Избежание - складок, морщинок, повреждений от солнца, разрывов, пятен, отпечатков пальцев и жира;<br>
-- Быстрый и надежный способ защиты ваших документов от промокания и истирания.
- С помощью ламинирования  Ваш документ примет более презентабельный вид. "
+            :subTitle="pageDescription || ''"
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"

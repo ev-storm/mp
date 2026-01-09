@@ -37,18 +37,26 @@ const formatProductionDays = (days: number | undefined): string => {
   return `${days} рабочих дней`;
 };
 
-// Метаданные страницы (срок изготовления, описание) - реактивные, обновляются динамически
+// Метаданные страницы (срок изготовления, изображение, описание) - реактивные, обновляются динамически
 const productionDays = ref<number | undefined>(1);
+const pageImage = ref<string>("");
 const pageDescription = ref<string>("");
+
+// Дефолтное изображение для страницы
+const defaultImage = "/img/stick/2.png";
 
 // Обновить метаданные из localStorage
 const updatePageMeta = () => {
   const meta = getPageMeta(pageKey);
   const newProductionDays = meta.productionDays ?? 1;
+  const newImage = meta.imageUrl || defaultImage;
   const newDescription = meta.description || "";
-  
+
   if (productionDays.value !== newProductionDays) {
     productionDays.value = newProductionDays;
+  }
+  if (pageImage.value !== newImage) {
+    pageImage.value = newImage;
   }
   if (pageDescription.value !== newDescription) {
     pageDescription.value = newDescription;
@@ -84,7 +92,16 @@ let intervalId: ReturnType<typeof setInterval> | null = null;
 onMounted(() => {
   updatePageMeta();
   updateFields();
-  window.addEventListener("storage", handleConfigUpdate);
+  // Слушаем кастомное событие обновления метаданных (когда админ-панель сохраняет данные в той же вкладке)
+  window.addEventListener("pageMetaUpdated", updatePageMeta);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "order-fields-config") {
+      updateFields();
+    }
+    if (e.key === "order-fields-meta") {
+      updatePageMeta();
+    }
+  });
   window.addEventListener("pageConfigUpdated", handlePageConfigUpdated);
   window.addEventListener("focus", () => {
     updateFields();
@@ -97,6 +114,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener("pageMetaUpdated", updatePageMeta);
   window.removeEventListener("storage", handleConfigUpdate);
   window.removeEventListener("pageConfigUpdated", handlePageConfigUpdated);
   window.removeEventListener("focus", handleConfigUpdate);
@@ -192,7 +210,7 @@ const submitOrder = async () => {
         <div class="tab-main">
           <div class="tab-option">
             <div class="tab-option-img">
-              <img src="/public/img/stick/2.png" alt="Изображение" />
+              <img :src="pageImage || '/img/stick/2.png'" alt="Изображение" />
             </div>
             <TabOptionMain :fields="fields" />
             <div class="tab-option-btn-con">
@@ -207,7 +225,7 @@ const submitOrder = async () => {
           </div>
           <TabOrder
             title="Плоттерная резка бумаги"
-            :subTitle="pageDescription || 'Плоттерная резка применима во многих направлениях. В частности, данная технология используется при изготовлении:<br>- Рекламных щитов и вывесок; <br>- Предупреждающих знаков; <br>- Информационных табличек; <br>- Наклеек для автотранспорта и оборудования;'"
+            :subTitle="pageDescription || ''"
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"

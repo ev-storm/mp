@@ -22,18 +22,37 @@ export default defineEventHandler(async (event) => {
     // Читаем пароль и секретный ключ из переменных окружения
     const config = useRuntimeConfig();
     const adminPassword = config.adminPassword || process.env.ADMIN_PASSWORD;
-    const adminSecretKey = config.adminSecretKey || process.env.ADMIN_SECRET_KEY;
+    const adminSecretKey =
+      config.adminSecretKey || process.env.ADMIN_SECRET_KEY;
 
     // Проверяем, что переменные окружения установлены
     if (!adminPassword || !adminSecretKey) {
       console.error("Ошибка конфигурации:");
-      console.error("ADMIN_PASSWORD:", adminPassword ? "установлен" : "НЕ УСТАНОВЛЕН");
-      console.error("ADMIN_SECRET_KEY:", adminSecretKey ? "установлен" : "НЕ УСТАНОВЛЕН");
-      console.error("process.env.ADMIN_PASSWORD:", process.env.ADMIN_PASSWORD ? "есть" : "нет");
-      console.error("process.env.ADMIN_SECRET_KEY:", process.env.ADMIN_SECRET_KEY ? "есть" : "нет");
-      console.error("config.adminPassword:", config.adminPassword ? "есть" : "нет");
-      console.error("config.adminSecretKey:", config.adminSecretKey ? "есть" : "нет");
-      
+      console.error(
+        "ADMIN_PASSWORD:",
+        adminPassword ? "установлен" : "НЕ УСТАНОВЛЕН"
+      );
+      console.error(
+        "ADMIN_SECRET_KEY:",
+        adminSecretKey ? "установлен" : "НЕ УСТАНОВЛЕН"
+      );
+      console.error(
+        "process.env.ADMIN_PASSWORD:",
+        process.env.ADMIN_PASSWORD ? "есть" : "нет"
+      );
+      console.error(
+        "process.env.ADMIN_SECRET_KEY:",
+        process.env.ADMIN_SECRET_KEY ? "есть" : "нет"
+      );
+      console.error(
+        "config.adminPassword:",
+        config.adminPassword ? "есть" : "нет"
+      );
+      console.error(
+        "config.adminSecretKey:",
+        config.adminSecretKey ? "есть" : "нет"
+      );
+
       throw createError({
         statusCode: 500,
         statusMessage:
@@ -65,9 +84,10 @@ export default defineEventHandler(async (event) => {
 
     setCookie(event, "admin-auth-token", authToken, {
       httpOnly: true,
-      secure: isProduction,
+      //secure: isProduction,
+      secure: false, // ВАЖНО: пока у тебя нет HTTPS, должно быть false
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 дней
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 

@@ -37,15 +37,29 @@ const formatProductionDays = (days: number | undefined): string => {
   return `${days} рабочих дней`;
 };
 
-// Метаданные страницы (срок изготовления) - реактивные, обновляются динамически
+// Метаданные страницы (срок изготовления, изображение, описание) - реактивные, обновляются динамически
 const productionDays = ref<number | undefined>(1);
+const pageImage = ref<string>("");
+const pageDescription = ref<string>("");
+
+// Дефолтное изображение для страницы
+const defaultImage = "/img/repli/1.png";
 
 // Обновить метаданные из localStorage
-const updateProductionDays = () => {
-  const pageMeta = getPageMeta(pageKey);
-  const newValue = pageMeta.productionDays ?? 1;
-  if (productionDays.value !== newValue) {
-    productionDays.value = newValue;
+const updatePageMeta = () => {
+  const meta = getPageMeta(pageKey);
+  const newProductionDays = meta.productionDays ?? 1;
+  const newImage = meta.imageUrl || defaultImage;
+  const newDescription = meta.description || "";
+
+  if (productionDays.value !== newProductionDays) {
+    productionDays.value = newProductionDays;
+  }
+  if (pageImage.value !== newImage) {
+    pageImage.value = newImage;
+  }
+  if (pageDescription.value !== newDescription) {
+    pageDescription.value = newDescription;
   }
 };
 
@@ -64,38 +78,48 @@ const handleConfigUpdate = (e?: StorageEvent) => {
     updateFields();
   }
   if (!e || e.key === "order-fields-meta") {
-    updateProductionDays();
+    updatePageMeta();
   }
 };
 
 // Слушаем кастомное событие обновления конфигурации
 const handlePageConfigUpdated = () => {
   updateFields();
-  updateProductionDays();
+  updatePageMeta();
 };
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
-  updateProductionDays();
+  updatePageMeta();
   updateFields();
+  // Слушаем кастомное событие обновления метаданных (когда админ-панель сохраняет данные в той же вкладке)
+  window.addEventListener("pageMetaUpdated", updatePageMeta);
   // Слушаем изменения в localStorage (когда админ-панель сохраняет данные в другой вкладке)
-  window.addEventListener("storage", handleConfigUpdate);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "order-fields-config") {
+      updateFields();
+    }
+    if (e.key === "order-fields-meta") {
+      updatePageMeta();
+    }
+  });
   // Слушаем кастомное событие обновления конфигурации (когда админ-панель сохраняет данные в той же вкладке)
   window.addEventListener("pageConfigUpdated", handlePageConfigUpdated);
   // Также проверяем изменения при фокусе окна
   window.addEventListener("focus", () => {
     updateFields();
-    updateProductionDays();
+    updatePageMeta();
   });
   // Периодическая проверка изменений (каждые 2 секунды)
   intervalId = setInterval(() => {
     updateFields();
-    updateProductionDays();
+    updatePageMeta();
   }, 2000);
 });
 
 onUnmounted(() => {
+  window.removeEventListener("pageMetaUpdated", updatePageMeta);
   window.removeEventListener("storage", handleConfigUpdate);
   window.removeEventListener("pageConfigUpdated", handlePageConfigUpdated);
   window.removeEventListener("focus", handleConfigUpdate);
@@ -397,6 +421,7 @@ const submitOrder = async () => {
           </div>
           <TabOrder
             title="Буклет"
+            :subTitle="pageDescription || ''"
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"
