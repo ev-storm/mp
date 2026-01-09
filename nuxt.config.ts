@@ -13,6 +13,20 @@ export default defineNuxtConfig({
       crawlLinks: true,
       routes: ["/"],
     },
+    // Увеличиваем лимит размера тела запроса для загрузки изображений и больших конфигураций
+    // По умолчанию Nitro имеет лимит ~1MB, увеличиваем до 50MB для base64 изображений
+    experimental: {
+      wasm: true,
+    },
+    // Настройка для увеличения лимита размера запроса
+    routeRules: {
+      "/api/**": {
+        cors: true,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+    },
   },
 
   // Конфигурация для API

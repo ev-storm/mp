@@ -37,15 +37,29 @@ const formatProductionDays = (days: number | undefined): string => {
   return `${days} рабочих дней`;
 };
 
-// Метаданные страницы (срок изготовления) - реактивные, обновляются динамически
+// Метаданные страницы (срок изготовления, изображение, описание) - реактивные, обновляются динамически
 const productionDays = ref<number | undefined>(1);
+const pageImage = ref<string>("");
+const pageDescription = ref<string>("");
+
+// Дефолтное изображение для страницы
+const defaultImage = "/img/catalogs/1.png";
 
 // Обновить метаданные из localStorage
-const updateProductionDays = () => {
-  const pageMeta = getPageMeta(pageKey);
-  const newValue = pageMeta.productionDays ?? 1;
-  if (productionDays.value !== newValue) {
-    productionDays.value = newValue;
+const updatePageMeta = () => {
+  const meta = getPageMeta(pageKey);
+  const newProductionDays = meta.productionDays ?? 1;
+  const newImage = meta.imageUrl || defaultImage;
+  const newDescription = meta.description || "";
+
+  if (productionDays.value !== newProductionDays) {
+    productionDays.value = newProductionDays;
+  }
+  if (pageImage.value !== newImage) {
+    pageImage.value = newImage;
+  }
+  if (pageDescription.value !== newDescription) {
+    pageDescription.value = newDescription;
   }
 };
 
@@ -53,25 +67,25 @@ let intervalId: ReturnType<typeof setInterval> | null = null;
 
 // Вызываем при монтировании
 onMounted(() => {
-  updateProductionDays();
+  updatePageMeta();
   // Слушаем кастомное событие обновления метаданных (когда админ-панель сохраняет данные в той же вкладке)
-  window.addEventListener("pageMetaUpdated", updateProductionDays);
+  window.addEventListener("pageMetaUpdated", updatePageMeta);
   // Слушаем изменения в localStorage (когда админ-панель сохраняет данные в другой вкладке)
   window.addEventListener("storage", (e) => {
     if (e.key === "order-fields-meta") {
-      updateProductionDays();
+      updatePageMeta();
     }
   });
   // Также проверяем изменения при фокусе окна
-  window.addEventListener("focus", updateProductionDays);
+  window.addEventListener("focus", updatePageMeta);
   // Периодическая проверка изменений (каждые 2 секунды)
-  intervalId = setInterval(updateProductionDays, 2000);
+  intervalId = setInterval(updatePageMeta, 2000);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("pageMetaUpdated", updateProductionDays);
-  window.removeEventListener("storage", updateProductionDays);
-  window.removeEventListener("focus", updateProductionDays);
+  window.removeEventListener("pageMetaUpdated", updatePageMeta);
+  window.removeEventListener("storage", updatePageMeta);
+  window.removeEventListener("focus", updatePageMeta);
   if (intervalId) {
     clearInterval(intervalId);
   }
@@ -162,7 +176,7 @@ const submitOrder = async () => {
         <div class="tab-main">
           <div class="tab-option">
             <div class="tab-option-img">
-              <img src="/public/img/catalogs/1.png" alt="" />
+              <img :src="pageImage || '/img/catalogs/1.png'" alt="Изображение" />
             </div>
             <TabOptionMain :fields="fields" />
             <div class="tab-option-btn-con">
@@ -177,7 +191,7 @@ const submitOrder = async () => {
           </div>
           <TabOrder
             title="Брошюры и каталоги <br> <span  style='font-size:15px;'>лазерная печать</span>"
-            subTitle="Типографии предлагают печать брошюр и каталогов, используя разные форматы (А4, А5, нестандартные), виды скрепления (скоба, КБС/КШС, пружина) и технологии (цифровая для малых тиражей, офсетная для больших), с акцентом на качество бумаги, верстку и дизайн для эффективной коммуникации и продаж. "
+            :subTitle="pageDescription || ''"
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"

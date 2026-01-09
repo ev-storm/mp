@@ -11,7 +11,8 @@ const checkAuth = (event: any): boolean => {
     if (!authToken) return false;
 
     const config = useRuntimeConfig();
-    const adminSecretKey = config.adminSecretKey || process.env.ADMIN_SECRET_KEY;
+    const adminSecretKey =
+      config.adminSecretKey || process.env.ADMIN_SECRET_KEY;
     if (!adminSecretKey) return false;
 
     const expectedToken = createHash("sha256")
@@ -43,7 +44,11 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const body = await readBody(event);
+    // Увеличиваем лимит размера тела запроса для этого endpoint
+    // По умолчанию h3 имеет лимит 1MB, увеличиваем до 50MB для base64 изображений
+    const body = await readBody(event, {
+      maxSize: 50 * 1024 * 1024, // 50MB
+    });
     const { config, meta } = body;
 
     console.log("POST /api/order-fields-config: Получен запрос", {
@@ -62,12 +67,12 @@ export default defineEventHandler(async (event) => {
     // Сохраняем конфигурацию в JSON файл
     // В продакшене лучше использовать базу данных
     const dataDir = join(process.cwd(), "data");
-    
+
     // Создаем директорию data, если её нет
     if (!existsSync(dataDir)) {
       await mkdir(dataDir, { recursive: true });
     }
-    
+
     // Сохраняем конфигурацию полей
     const configPath = join(dataDir, "order-fields-config.json");
     await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
@@ -91,4 +96,3 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
