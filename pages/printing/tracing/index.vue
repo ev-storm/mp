@@ -41,6 +41,8 @@ const formatProductionDays = (days: number | undefined): string => {
 const productionDays = ref<number | undefined>(1);
 const pageImage = ref<string>("");
 const pageDescription = ref<string>("");
+const showMacketButton = ref<boolean>(true);
+const showDesignButton = ref<boolean>(true);
 
 // Дефолтное изображение для страницы
 const defaultImage = "/img/tracing/1.png";
@@ -51,6 +53,8 @@ const updatePageMeta = () => {
   const newProductionDays = meta.productionDays ?? 1;
   const newImage = meta.imageUrl || defaultImage;
   const newDescription = meta.description || "";
+  const newShowMacketButton = meta.showMacketButton ?? true;
+  const newShowDesignButton = meta.showDesignButton ?? true;
 
   if (productionDays.value !== newProductionDays) {
     productionDays.value = newProductionDays;
@@ -60,6 +64,12 @@ const updatePageMeta = () => {
   }
   if (pageDescription.value !== newDescription) {
     pageDescription.value = newDescription;
+  }
+  if (showMacketButton.value !== newShowMacketButton) {
+    showMacketButton.value = newShowMacketButton;
+  }
+  if (showDesignButton.value !== newShowDesignButton) {
+    showDesignButton.value = newShowDesignButton;
   }
 };
 
@@ -202,7 +212,8 @@ const submitOrder = async () => {
             :fields="fields"
             :is-design-active="isDesignActive"
             :total-price="totalPrice"
-            :show-design-button="false"
+            :show-macket-button="showMacketButton"
+            :show-design-button="showDesignButton"
             :form-data="formData"
             :macket-file-name="macketFileName"
             @update:is-design-active="isDesignActive = $event"

@@ -42,6 +42,8 @@ interface PageMeta {
   productionDays?: number; // Количество дней для изготовления
   description?: string; // Текст описания для страницы (отображается в .tab-order-name p)
   imageUrl?: string; // URL изображения для страницы (отображается в .tab-option-img img)
+  showMacketButton?: boolean; // Показывать ли кнопку загрузки макета (tab-order-macket)
+  showDesignButton?: boolean; // Показывать ли кнопку заказа дизайна (tab-order-macket-des)
 }
 
 const pageMeta = reactive<Record<PageConfigKey, PageMeta>>(
@@ -687,6 +689,66 @@ const currentPageDescription = computed({
   },
 });
 
+// Computed для showMacketButton
+const currentShowMacketButton = computed({
+  get: () => {
+    if (!selectedPage.value) return true;
+    if (!pageMeta[selectedPage.value]) {
+      initPageMeta(selectedPage.value);
+    }
+    return pageMeta[selectedPage.value]?.showMacketButton ?? true;
+  },
+  set: (value: boolean) => {
+    if (!selectedPage.value) return;
+    if (!pageMeta[selectedPage.value]) {
+      initPageMeta(selectedPage.value);
+    }
+    pageMeta[selectedPage.value].showMacketButton = value;
+    savePageMeta();
+  },
+});
+
+// Computed для showDesignButton
+const currentShowDesignButton = computed({
+  get: () => {
+    if (!selectedPage.value) return true;
+    if (!pageMeta[selectedPage.value]) {
+      initPageMeta(selectedPage.value);
+    }
+    return pageMeta[selectedPage.value]?.showDesignButton ?? true;
+  },
+  set: (value: boolean) => {
+    if (!selectedPage.value) return;
+    if (!pageMeta[selectedPage.value]) {
+      initPageMeta(selectedPage.value);
+    }
+    pageMeta[selectedPage.value].showDesignButton = value;
+    savePageMeta();
+  },
+});
+
+// Обработчики для кнопок
+const toggleMacketButton = () => {
+  const newValue = !currentShowMacketButton.value;
+  currentShowMacketButton.value = newValue;
+
+  // Если макет деактивируется, дизайн тоже должен деактивироваться
+  if (!newValue && currentShowDesignButton.value) {
+    currentShowDesignButton.value = false;
+  }
+};
+
+const toggleDesignButton = () => {
+  const newValue = !currentShowDesignButton.value;
+
+  // Если дизайн активируется, макет тоже должен активироваться
+  if (newValue && !currentShowMacketButton.value) {
+    currentShowMacketButton.value = true;
+  }
+
+  currentShowDesignButton.value = newValue;
+};
+
 // Сохранить метаданные страницы (только в localStorage и событие, основное сохранение через saveConfig)
 const savePageMeta = () => {
   // Метаданные сохраняются вместе с конфигурацией через saveConfig()
@@ -937,6 +999,21 @@ watch(
             </h2>
 
             <div class="page-header-actions">
+              <div class="makets-btn-con">
+                <button
+                  :class="{ active: currentShowMacketButton }"
+                  @click="toggleMacketButton"
+                >
+                  Макет
+                </button>
+                <button
+                  :class="{ active: currentShowDesignButton }"
+                  :disabled="!currentShowMacketButton"
+                  @click="toggleDesignButton"
+                >
+                  Дизайн
+                </button>
+              </div>
               <div class="form-group page-settings">
                 <img src="/assets/svg/time-work.svg" alt="" />
                 <input
@@ -1503,6 +1580,43 @@ watch(
   display: flex;
   gap: 10px;
   align-items: center;
+}
+
+.makets-btn-con {
+  display: flex;
+  gap: 5px;
+  border: 0px solid var(--grey);
+  border-radius: 8px;
+  padding: 2px;
+  background: var(--back);
+}
+
+.makets-btn-con button {
+  padding: 2px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--grey);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.makets-btn-con button:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.makets-btn-con button.active {
+  background: var(--blue);
+  color: white;
+}
+
+.makets-btn-con button.active:hover:not(:disabled) {
+  background: #558dd5;
+}
+
+.makets-btn-con button:disabled {
+  opacity: 0.5;
 }
 
 .page-header h2 {

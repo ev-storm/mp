@@ -1458,6 +1458,8 @@ export interface PageMeta {
   productionDays?: number; // Количество дней для изготовления
   description?: string; // Текст описания для страницы (отображается в .tab-order-name p)
   imageUrl?: string; // URL изображения для страницы (отображается в .tab-option-img img)
+  showMacketButton?: boolean; // Показывать ли кнопку загрузки макета (tab-order-macket)
+  showDesignButton?: boolean; // Показывать ли кнопку заказа дизайна (tab-order-macket-des)
 }
 
 const META_STORAGE_KEY = "order-fields-meta";
