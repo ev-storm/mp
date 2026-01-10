@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { reactive, computed, ref, watch, onMounted } from "vue";
+import { reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { OrderField } from "~/types/order-fields";
 import {
   calculateTotalPrice,
   getQuantityFromFields,
 } from "~/types/order-fields";
+import {
+  getPageMeta,
+  type PageConfigKey,
+} from "~/config/order-fields-config";
 
 definePageMeta({
   key: (route) => route.fullPath,
@@ -21,6 +25,7 @@ useHead({
 });
 
 // Конфигурация полей для буклетов
+const pageKey: PageConfigKey = "catalogs";
 const fields = reactive<OrderField[]>([
   {
     id: "paper",
@@ -86,6 +91,57 @@ const fields = reactive<OrderField[]>([
     value: null,
   },
 ]);
+
+// Метаданные страницы (примеры работ)
+const pageExamples = ref<string[]>([]);
+
+// Обновить метаданные из localStorage
+const updatePageMeta = () => {
+  const meta = getPageMeta(pageKey);
+  const newExamples = meta.examples || [];
+
+  if (JSON.stringify(pageExamples.value) !== JSON.stringify(newExamples)) {
+    pageExamples.value = newExamples;
+  }
+};
+
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  updatePageMeta();
+  // Слушаем кастомное событие обновления метаданных
+  window.addEventListener("pageMetaUpdated", updatePageMeta);
+  // Слушаем изменения в localStorage
+  window.addEventListener("storage", (e) => {
+    if (e.key === "order-fields-meta") {
+      updatePageMeta();
+    }
+  });
+  // Также проверяем изменения при фокусе окна
+  window.addEventListener("focus", updatePageMeta);
+  // Периодическая проверка изменений (каждые 2 секунды)
+  intervalId = setInterval(updatePageMeta, 2000);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("pageMetaUpdated", updatePageMeta);
+  window.removeEventListener("storage", updatePageMeta);
+  window.removeEventListener("focus", updatePageMeta);
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
+
+// Модалка примеров работ
+const showExamplesModal = ref(false);
+
+const openExamplesModal = () => {
+  showExamplesModal.value = true;
+};
+
+const closeExamplesModal = () => {
+  showExamplesModal.value = false;
+};
 
 // Заказать дизайн
 const isDesignActive = ref(false);
@@ -175,7 +231,7 @@ const submitOrder = async () => {
               <button class="tab-option-btn">
                 Технические требования к макету
               </button>
-              <button class="tab-option-btn">Примеры работ</button>
+              <button class="tab-option-btn example-btn" @click="openExamplesModal">Примеры работ</button>
               <button class="tab-option-btn">
                 Срок изготовления: <span>один рабочий день</span>
               </button>
@@ -201,6 +257,12 @@ const submitOrder = async () => {
   </div>
 
   <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
+
+  <ExamplesModal
+    :is-open="showExamplesModal"
+    :examples="pageExamples"
+    @close="closeExamplesModal"
+  />
 </template>
 
 <style scoped>

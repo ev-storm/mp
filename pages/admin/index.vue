@@ -44,6 +44,7 @@ interface PageMeta {
   imageUrl?: string; // URL изображения для страницы (отображается в .tab-option-img img)
   showMacketButton?: boolean; // Показывать ли кнопку загрузки макета (tab-order-macket)
   showDesignButton?: boolean; // Показывать ли кнопку заказа дизайна (tab-order-macket-des)
+  examples?: string[]; // Массив URL изображений примеров работ
 }
 
 const pageMeta = reactive<Record<PageConfigKey, PageMeta>>(
@@ -73,6 +74,9 @@ const deleteAction = ref<{
   optionIndex: null,
   message: undefined,
 });
+
+// Модалка примеров работ
+const showExamplesModal = ref(false);
 
 // Список всех страниц с их названиями
 const pageNames: Record<PageConfigKey, string> = {
@@ -490,9 +494,124 @@ const confirmDelete = (
   showDeleteModal.value = true;
 };
 
+// Запрещенные поля для удаления (по ключу страницы и label поля)
+const protectedFields: Record<string, string[]> = {
+  "booklet-laser": ["Сложение", "Плотность бумаги", "Биговка"],
+  "booklet-ofset": ["Сложение", "Плотность бумаги", "Биговка"],
+};
+
+// Проверка, можно ли удалять поле
+const canDeleteField = (
+  pageKey: PageConfigKey | null,
+  fieldIndex: number
+): boolean => {
+  if (!pageKey) return false;
+  const field = config[pageKey]?.[fieldIndex];
+  const protectedLabels = protectedFields[pageKey];
+
+  if (field && protectedLabels && protectedLabels.includes(field.label)) {
+    return false;
+  }
+
+  return true;
+};
+
 // Показать модалку для удаления поля
 const confirmDeleteField = (pageKey: PageConfigKey, index: number) => {
+  // Проверяем, является ли поле запрещенным для удаления
+  if (!canDeleteField(pageKey, index)) {
+    const field = config[pageKey]?.[index];
+    toastMessage.value = `Поле "${
+      field?.label || "это поле"
+    }" нельзя удалять для этой страницы`;
+    showToast.value = true;
+    setTimeout(() => {
+      showToast.value = false;
+    }, 3000);
+    return;
+  }
+
   confirmDelete("field", pageKey, index);
+};
+
+// Drag and Drop для изменения порядка полей
+const draggedFieldIndex = ref<number | null>(null);
+const dragOverIndex = ref<number | null>(null);
+
+const handleDragStart = (event: DragEvent, fieldIndex: number) => {
+  draggedFieldIndex.value = fieldIndex;
+  dragOverIndex.value = null;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/html", fieldIndex.toString());
+  }
+};
+
+const handleDragEnd = (event: DragEvent) => {
+  draggedFieldIndex.value = null;
+  dragOverIndex.value = null;
+};
+
+const handleDragOver = (event: DragEvent, targetIndex: number) => {
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+  if (
+    draggedFieldIndex.value !== null &&
+    draggedFieldIndex.value !== targetIndex
+  ) {
+    dragOverIndex.value = targetIndex;
+  }
+};
+
+const handleDragLeave = (event: DragEvent) => {
+  // Проверяем, что мы действительно покинули элемент (не перешли на дочерний)
+  const target = event.target as HTMLElement;
+  const relatedTarget = event.relatedTarget as HTMLElement;
+  if (!target.contains(relatedTarget)) {
+    dragOverIndex.value = null;
+  }
+};
+
+const handleDrop = (event: DragEvent, targetIndex: number) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (draggedFieldIndex.value === null || !selectedPage.value) {
+    dragOverIndex.value = null;
+    return;
+  }
+
+  const sourceIndex = draggedFieldIndex.value;
+
+  if (sourceIndex === targetIndex) {
+    dragOverIndex.value = null;
+    return;
+  }
+
+  // Перемещаем поле в массиве
+  const fields = config[selectedPage.value];
+  if (!fields) {
+    dragOverIndex.value = null;
+    return;
+  }
+
+  const [movedField] = fields.splice(sourceIndex, 1);
+  if (movedField) {
+    fields.splice(targetIndex, 0, movedField);
+  }
+
+  // Сбрасываем состояние
+  draggedFieldIndex.value = null;
+  dragOverIndex.value = null;
+
+  // Показываем уведомление
+  toastMessage.value = "Порядок полей обновлен";
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 2000);
 };
 
 // Выполнить удаление (после подтверждения)
@@ -505,6 +624,20 @@ const executeDelete = () => {
   }
 
   if (type === "field") {
+    // Проверяем еще раз перед удалением (на всякий случай)
+    const field = config[pageKey]?.[fieldIndex];
+    const protectedLabels = protectedFields[pageKey];
+
+    if (field && protectedLabels && protectedLabels.includes(field.label)) {
+      toastMessage.value = `Поле "${field.label}" нельзя удалять для этой страницы`;
+      showToast.value = true;
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
+      closeDeleteModal();
+      return;
+    }
+
     // Удалить поле
     if (config[pageKey]) {
       config[pageKey].splice(fieldIndex, 1);
@@ -749,6 +882,116 @@ const toggleDesignButton = () => {
   currentShowDesignButton.value = newValue;
 };
 
+// Computed для примеров работ текущей страницы
+const currentPageExamples = computed(() => {
+  if (!selectedPage.value) return [];
+  if (!pageMeta[selectedPage.value]) {
+    initPageMeta(selectedPage.value);
+  }
+  return pageMeta[selectedPage.value]?.examples || [];
+});
+
+// Открыть модалку примеров работ
+const openExamplesModal = () => {
+  showExamplesModal.value = true;
+};
+
+// Закрыть модалку примеров работ
+const closeExamplesModal = () => {
+  showExamplesModal.value = false;
+};
+
+// Обработчик клика на кнопку "Добавить примеры работ"
+const handleExamplesButtonClick = () => {
+  if (typeof window !== "undefined" && examplesInputRef.value) {
+    examplesInputRef.value.click();
+  }
+};
+
+// Обработчик загрузки примеров работ
+const handleExamplesUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+  if (!files || !selectedPage.value) return;
+
+  // Инициализируем метаданные страницы, если их нет
+  if (!pageMeta[selectedPage.value]) {
+    initPageMeta(selectedPage.value);
+  }
+
+  try {
+    // Конвертируем все выбранные файлы в base64
+    const newExamples: string[] = [];
+    const fileArray = Array.from(files);
+
+    // Проверяем каждый файл
+    for (const file of fileArray) {
+      // Проверяем тип файла
+      if (!file.type.startsWith("image/")) {
+        message.value = {
+          type: "error",
+          text: `Файл "${file.name}" не является изображением`,
+        };
+        continue;
+      }
+
+      // Проверяем размер файла (максимум 10 МБ)
+      if (file.size > 10 * 1024 * 1024) {
+        message.value = {
+          type: "error",
+          text: `Файл "${file.name}" превышает 10 МБ`,
+        };
+        continue;
+      }
+
+      // Читаем файл как base64
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          if (result) {
+            resolve(result);
+          } else {
+            reject(new Error(`Ошибка при чтении файла ${file.name}`));
+          }
+        };
+        reader.onerror = () => {
+          reject(new Error(`Ошибка при чтении файла ${file.name}`));
+        };
+        reader.readAsDataURL(file);
+      });
+
+      newExamples.push(base64Data);
+    }
+
+    if (newExamples.length > 0) {
+      // Добавляем новые примеры к существующим или заменяем их
+      const currentExamples = pageMeta[selectedPage.value]?.examples || [];
+      pageMeta[selectedPage.value].examples = [
+        ...currentExamples,
+        ...newExamples,
+      ];
+      savePageMeta();
+
+      toastMessage.value = `Загружено примеров работ: ${newExamples.length}. Нажмите 'Сохранить' для применения изменений.`;
+      showToast.value = true;
+      setTimeout(() => {
+        showToast.value = false;
+      }, 3000);
+    }
+
+    // Очищаем input, чтобы можно было выбрать те же файлы снова
+    if (input) {
+      input.value = "";
+    }
+  } catch (error: any) {
+    message.value = {
+      type: "error",
+      text: error.message || "Ошибка при загрузке примеров работ",
+    };
+  }
+};
+
 // Сохранить метаданные страницы (только в localStorage и событие, основное сохранение через saveConfig)
 const savePageMeta = () => {
   // Метаданные сохраняются вместе с конфигурацией через saveConfig()
@@ -772,6 +1015,9 @@ const savePageMeta = () => {
 
 // Ref для input файла изображения
 const imageInputRef = ref<HTMLInputElement | null>(null);
+
+// Ref для input файлов примеров работ
+const examplesInputRef = ref<HTMLInputElement | null>(null);
 
 // Обработчик клика по контейнеру изображения
 const handleImageClick = () => {
@@ -999,6 +1245,35 @@ watch(
             </h2>
 
             <div class="page-header-actions">
+              <div class="example-con">
+                <button @click="handleExamplesButtonClick">
+                  <img
+                    class="example-preview-btn-img"
+                    src="/assets/svg/exe.svg"
+                    alt=""
+                  />
+                </button>
+                <button
+                  v-if="currentPageExamples.length > 0"
+                  @click="openExamplesModal"
+                  class="example-preview-btn"
+                >
+                  <img
+                    class="example-preview-btn-img"
+                    src="/assets/svg/eye.svg"
+                    alt=""
+                  />
+                  ({{ currentPageExamples.length }})
+                </button>
+                <input
+                  ref="examplesInputRef"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style="display: none"
+                  @change="handleExamplesUpload"
+                />
+              </div>
               <div class="makets-btn-con">
                 <button
                   :class="{ active: currentShowMacketButton }"
@@ -1069,12 +1344,48 @@ watch(
               v-for="(field, fieldIndex) in currentFields"
               :key="field.id || fieldIndex"
               class="field-card"
+              :class="{
+                dragging: draggedFieldIndex === fieldIndex,
+                'drag-over':
+                  dragOverIndex === fieldIndex &&
+                  draggedFieldIndex !== fieldIndex,
+              }"
+              draggable="true"
+              @dragstart="handleDragStart($event, fieldIndex)"
+              @dragend="handleDragEnd($event)"
+              @dragover="handleDragOver($event, fieldIndex)"
+              @dragleave="handleDragLeave($event)"
+              @drop="handleDrop($event, fieldIndex)"
             >
               <div
                 class="field-header"
                 :class="{ expanded: isFieldExpanded(fieldIndex) }"
                 @click="toggleFieldCard(fieldIndex)"
               >
+                <!-- Handle для перетаскивания -->
+                <div
+                  class="field-drag-handle"
+                  @mousedown.stop
+                  @click.stop
+                  title="Перетащите для изменения порядка"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle cx="5" cy="5" r="1.5" fill="currentColor" />
+                    <circle cx="10" cy="5" r="1.5" fill="currentColor" />
+
+                    <circle cx="5" cy="10" r="1.5" fill="currentColor" />
+                    <circle cx="10" cy="10" r="1.5" fill="currentColor" />
+
+                    <circle cx="5" cy="15" r="1.5" fill="currentColor" />
+                    <circle cx="10" cy="15" r="1.5" fill="currentColor" />
+                  </svg>
+                </div>
                 <h3
                   :style="{
                     color: isFieldExpanded(fieldIndex)
@@ -1091,7 +1402,9 @@ watch(
                   </span>
                 </h3>
                 <button
-                  v-if="selectedPage"
+                  v-if="
+                    selectedPage && canDeleteField(selectedPage, fieldIndex)
+                  "
                   @click.stop="confirmDeleteField(selectedPage, fieldIndex)"
                   class="btn btn-danger btn-small"
                 >
@@ -1392,6 +1705,12 @@ watch(
     type="success"
     @close="closeToast"
   />
+
+  <ExamplesModal
+    :is-open="showExamplesModal"
+    :examples="currentPageExamples"
+    @close="closeExamplesModal"
+  />
 </template>
 
 <style scoped>
@@ -1503,7 +1822,25 @@ watch(
 .page-list::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
-
+.example-preview-btn-img {
+  width: 20px;
+}
+.example-preview-btn {
+  display: flex;
+  gap: 5px;
+}
+.example-con button {
+  padding: 2px 16px !important;
+}
+.example-preview-btn-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.example-preview-btn-img img {
+  width: 20px;
+}
 .page-item {
   padding: 2px 10px;
   text-align: start;
@@ -1573,6 +1910,7 @@ watch(
   height: 7vh;
   position: sticky;
   top: 0;
+  z-index: 9;
   /* box-shadow: #00000010 0 10px 10px; */
 }
 
@@ -1619,12 +1957,37 @@ watch(
   opacity: 0.5;
 }
 
+.example-con {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.example-con button {
+  padding: 6px 16px;
+  border: 1px solid var(--grey);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--grey);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.example-con button:hover {
+  background: var(--back);
+  color: var(--blue);
+  border-color: var(--blue);
+}
+
 .page-header h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 500;
   display: flex;
   gap: 10px;
+  width: 30%;
+  line-height: 1;
   /* color теперь применяется динамически через :style */
 }
 
@@ -1670,6 +2033,18 @@ watch(
   padding: 0;
   background: transparent;
   width: 100%;
+  position: relative;
+  transition: opacity 0.2s ease;
+}
+
+.field-card.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.field-card.drag-over {
+  border-top: 3px solid var(--blue);
+  margin-top: 3px;
 }
 
 .field-header {
@@ -1681,11 +2056,68 @@ watch(
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
-  padding: 5px 40px;
+  padding: 5px 40px 5px 20px;
   border-radius: 10px;
   transition: background-color 0.2s;
   /* box-shadow: #00000010 0 10px 10px; */
   background: #ffffff;
+  gap: 10px;
+}
+
+.field-drag-handle {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--grey);
+  padding: 2px;
+  transition: color 0.2s ease, opacity 0.2s ease;
+  user-select: none;
+  opacity: 0.6;
+}
+
+.field-drag-handle:hover {
+  color: var(--blue);
+  opacity: 1;
+}
+
+.field-drag-handle:active {
+  cursor: grabbing;
+}
+
+.field-header.expanded .field-drag-handle {
+  opacity: 1;
+}
+
+.field-drag-handle {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--grey);
+  padding: 2px;
+  transition: color 0.2s ease;
+  user-select: none;
+  opacity: 0.6;
+}
+
+.field-drag-handle:hover {
+  color: var(--blue);
+  opacity: 1;
+}
+
+.field-drag-handle:active {
+  cursor: grabbing;
+}
+
+.field-header.expanded .field-drag-handle {
+  opacity: 1;
 }
 
 /* .field-header.expanded h3 color теперь применяется динамически через :style */

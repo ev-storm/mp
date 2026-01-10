@@ -1460,6 +1460,7 @@ export interface PageMeta {
   imageUrl?: string; // URL изображения для страницы (отображается в .tab-option-img img)
   showMacketButton?: boolean; // Показывать ли кнопку загрузки макета (tab-order-macket)
   showDesignButton?: boolean; // Показывать ли кнопку заказа дизайна (tab-order-macket-des)
+  examples?: string[]; // Массив URL изображений примеров работ
 }
 
 const META_STORAGE_KEY = "order-fields-meta";

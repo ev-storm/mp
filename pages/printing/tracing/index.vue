@@ -43,6 +43,7 @@ const pageImage = ref<string>("");
 const pageDescription = ref<string>("");
 const showMacketButton = ref<boolean>(true);
 const showDesignButton = ref<boolean>(true);
+const pageExamples = ref<string[]>([]);
 
 // Дефолтное изображение для страницы
 const defaultImage = "/img/tracing/1.png";
@@ -55,6 +56,7 @@ const updatePageMeta = () => {
   const newDescription = meta.description || "";
   const newShowMacketButton = meta.showMacketButton ?? true;
   const newShowDesignButton = meta.showDesignButton ?? true;
+  const newExamples = meta.examples || [];
 
   if (productionDays.value !== newProductionDays) {
     productionDays.value = newProductionDays;
@@ -70,6 +72,9 @@ const updatePageMeta = () => {
   }
   if (showDesignButton.value !== newShowDesignButton) {
     showDesignButton.value = newShowDesignButton;
+  }
+  if (JSON.stringify(pageExamples.value) !== JSON.stringify(newExamples)) {
+    pageExamples.value = newExamples;
   }
 };
 
@@ -160,6 +165,17 @@ const submitOrder = async () => {
     totalPrice,
   });
 };
+
+// Модалка примеров работ
+const showExamplesModal = ref(false);
+
+const openExamplesModal = () => {
+  showExamplesModal.value = true;
+};
+
+const closeExamplesModal = () => {
+  showExamplesModal.value = false;
+};
 </script>
 
 <template>
@@ -197,7 +213,7 @@ const submitOrder = async () => {
               <button class="tab-option-btn">
                 Технические требования к макету
               </button>
-              <button class="tab-option-btn">Примеры работ</button>
+              <button class="tab-option-btn example-btn" @click="openExamplesModal">Примеры работ</button>
               <button class="tab-option-btn">
                 Срок изготовления: <span>{{ productionDaysText }}</span>
               </button>
@@ -228,6 +244,12 @@ const submitOrder = async () => {
   </div>
 
   <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
+
+  <ExamplesModal
+    :is-open="showExamplesModal"
+    :examples="pageExamples"
+    @close="closeExamplesModal"
+  />
 </template>
 
 <style scoped>

@@ -41,6 +41,7 @@ const formatProductionDays = (days: number | undefined): string => {
 const productionDays = ref<number | undefined>(1);
 const pageImage = ref<string>("");
 const pageDescription = ref<string>("");
+const pageExamples = ref<string[]>([]);
 
 // Дефолтное изображение для страницы
 const defaultImage = "/img/repli/1.png";
@@ -51,6 +52,7 @@ const updatePageMeta = () => {
   const newProductionDays = meta.productionDays ?? 1;
   const newImage = meta.imageUrl || defaultImage;
   const newDescription = meta.description || "";
+  const newExamples = meta.examples || [];
 
   if (productionDays.value !== newProductionDays) {
     productionDays.value = newProductionDays;
@@ -60,6 +62,9 @@ const updatePageMeta = () => {
   }
   if (pageDescription.value !== newDescription) {
     pageDescription.value = newDescription;
+  }
+  if (JSON.stringify(pageExamples.value) !== JSON.stringify(newExamples)) {
+    pageExamples.value = newExamples;
   }
 };
 
@@ -90,39 +95,62 @@ const handlePageConfigUpdated = () => {
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
+// Именованные обработчики для правильного удаления
+const handleStorage = (e: StorageEvent) => {
+  if (e.key === "order-fields-config") {
+    updateFields();
+  }
+  if (e.key === "order-fields-meta") {
+    updatePageMeta();
+  }
+};
+
+const handleFocus = () => {
+  updatePageMeta();
+};
+
 onMounted(() => {
   updatePageMeta();
-  updateFields();
+  
+  // Инициализируем активную кнопку буклета на основе выбранного значения в dropdown
+  const foldingField = fields.find((f: OrderField) => f.label === "Сложение");
+  if (foldingField && foldingField.type === "dropdown" && foldingField.value) {
+    const selectedLabel = foldingField.value.label;
+    const btnIndex = foldingToBookBtnMap[selectedLabel];
+    if (btnIndex !== undefined) {
+      activeBookBtn.value = btnIndex;
+    }
+  }
+  
   // Слушаем кастомное событие обновления метаданных (когда админ-панель сохраняет данные в той же вкладке)
   window.addEventListener("pageMetaUpdated", updatePageMeta);
   // Слушаем изменения в localStorage (когда админ-панель сохраняет данные в другой вкладке)
-  window.addEventListener("storage", (e) => {
-    if (e.key === "order-fields-config") {
-      updateFields();
-    }
-    if (e.key === "order-fields-meta") {
-      updatePageMeta();
-    }
-  });
+  window.addEventListener("storage", handleStorage);
   // Слушаем кастомное событие обновления конфигурации (когда админ-панель сохраняет данные в той же вкладке)
   window.addEventListener("pageConfigUpdated", handlePageConfigUpdated);
   // Также проверяем изменения при фокусе окна
-  window.addEventListener("focus", () => {
-    updateFields();
-    updatePageMeta();
-  });
+  window.addEventListener("focus", handleFocus);
   // Периодическая проверка изменений (каждые 2 секунды)
   intervalId = setInterval(() => {
-    updateFields();
     updatePageMeta();
   }, 2000);
+  
+  // Загружаем SVG для кнопок буклетов
+  bookBtnSvgRefs.value.forEach(
+    (container: HTMLElement | null, index: number) => {
+      const path = bookBtnSvgPaths[index];
+      if (path) {
+        loadBookBtnSvg(container, path);
+      }
+    }
+  );
 });
 
 onUnmounted(() => {
   window.removeEventListener("pageMetaUpdated", updatePageMeta);
-  window.removeEventListener("storage", handleConfigUpdate);
+  window.removeEventListener("storage", handleStorage);
   window.removeEventListener("pageConfigUpdated", handlePageConfigUpdated);
-  window.removeEventListener("focus", handleConfigUpdate);
+  window.removeEventListener("focus", handleFocus);
   if (intervalId) {
     clearInterval(intervalId);
   }
@@ -175,58 +203,55 @@ const setBookBtnSvgRef = (index: number) => (el: any) => {
   bookBtnSvgRefs.value[index] = el;
 };
 
-// Загружаем все SVG при монтировании
-onMounted(() => {
-  bookBtnSvgRefs.value.forEach(
-    (container: HTMLElement | null, index: number) => {
-      const path = bookBtnSvgPaths[index];
-      if (path) {
-        loadBookBtnSvg(container, path);
-      }
-    }
-  );
-});
 
 // Маппинг кнопок буклета на опции сложения
 const bookBtnToFoldingMap: Record<number, string> = {
-  0: "Без сложения",
-  1: "1 фальц (пополам)",
-  2: "2 фальца (евробуклет)",
-  3: "2 фальца (гармошка)",
-  4: "3 фальца (гармошка)",
-  5: "4 фальца (гармошка)",
+  0: "без сложений (Листовка)",
+  1: "1 сложение (Книжка)",
+  2: "2 сложения (Евробуклет)",
+  3: "2 сложения (Гармошка )",
+  4: "3 сложения (Гармошка )",
+  5: "4 сложения (Гармошка )",
 };
 
 // Обратный маппинг: опция сложения -> индекс кнопки
 const foldingToBookBtnMap: Record<string, number> = {
-  "Без сложения": 0,
-  "1 фальц (пополам)": 1,
-  "2 фальца (евробуклет)": 2,
-  "2 фальца (гармошка)": 3,
-  "3 фальца (гармошка)": 4,
-  "4 фальца (гармошка)": 5,
+  "без сложений (Листовка)": 0,
+  "1 сложение (Книжка)": 1,
+  "2 сложения (Евробуклет)": 2,
+  "2 сложения (Гармошка )": 3,
+  "3 сложения (Гармошка )": 4,
+  "4 сложения (Гармошка )": 5,
 };
+
+// Флаг для предотвращения бесконечного цикла при программном изменении
+const isUpdatingFromButton = ref(false);
 
 // Выбор кнопки буклета
 const selectBookBtn = (index: number) => {
   activeBookBtn.value = index;
 
-  // Находим поле folding и устанавливаем значение
-  const foldingFieldItem = fields.find((f: OrderField) => f.id === "folding");
+  // Находим поле "Сложение" по label и устанавливаем значение
+  const foldingFieldItem = fields.find((f: OrderField) => f.label === "Сложение");
   if (foldingFieldItem && foldingFieldItem.type === "dropdown") {
     const optionLabel = bookBtnToFoldingMap[index];
     const option = foldingFieldItem.options.find(
       (o: { label: string; price: number }) => o.label === optionLabel
     );
     if (option) {
+      isUpdatingFromButton.value = true;
       foldingFieldItem.value = option;
+      // Сбрасываем флаг после следующего тика, чтобы watch мог обработать изменение
+      setTimeout(() => {
+        isUpdatingFromButton.value = false;
+      }, 0);
     }
   }
 };
 
 // Следим за изменениями в dropdown "Сложение" для обратной синхронизации
 const foldingFieldComputed = computed(() =>
-  fields.find((f: OrderField) => f.id === "folding")
+  fields.find((f: OrderField) => f.label === "Сложение")
 );
 
 watch(
@@ -235,9 +260,12 @@ watch(
       ? foldingFieldComputed.value.value
       : null,
   (newValue: { label: string; price: number } | null) => {
+    // Не обновляем activeBookBtn, если изменение было вызвано кликом на кнопку
+    if (isUpdatingFromButton.value) return;
+    
     if (newValue && newValue.label) {
       const btnIndex = foldingToBookBtnMap[newValue.label];
-      if (btnIndex !== undefined) {
+      if (btnIndex !== undefined && activeBookBtn.value !== btnIndex) {
         activeBookBtn.value = btnIndex;
       }
     } else {
@@ -247,27 +275,27 @@ watch(
   { deep: true }
 );
 
-// Следим за изменениями в dropdown "Бумага" для автоактивации Биговки
-const paperFieldComputed = computed(() =>
-  fields.find((f: OrderField) => f.id === "paper")
+// Следим за изменениями в dropdown "Плотность бумаги" для автоактивации Биговки
+const paperDensityFieldComputed = computed(() =>
+  fields.find((f: OrderField) => f.label === "Плотность бумаги")
 );
 const creasingFieldComputed = computed(() =>
-  fields.find((f: OrderField) => f.id === "creasing")
+  fields.find((f: OrderField) => f.label === "Биговка")
 );
 
 watch(
   () =>
-    paperFieldComputed.value?.type === "dropdown"
-      ? paperFieldComputed.value.value
+    paperDensityFieldComputed.value?.type === "dropdown"
+      ? paperDensityFieldComputed.value.value
       : null,
   (newValue: { label: string; price: number } | null) => {
-    if (newValue && newValue.label) {
+    if (newValue && newValue.label && creasingFieldComputed.value?.type === "toggle") {
       // Извлекаем число из label, например "200 г/м²" -> 200
       const match = newValue.label.match(/(\d+)/);
       if (match) {
         const weight = parseInt(match[1], 10);
-        // Если плотность >= 200, активируем Биговку
-        if (weight >= 200 && creasingFieldComputed.value?.type === "toggle") {
+        // Если плотность > 200 г/м², активируем Биговку
+        if (weight > 200) {
           creasingFieldComputed.value.value = true;
         }
       }
@@ -326,6 +354,17 @@ const submitOrder = async () => {
     formData,
     totalPrice,
   });
+};
+
+// Модалка примеров работ
+const showExamplesModal = ref(false);
+
+const openExamplesModal = () => {
+  showExamplesModal.value = true;
+};
+
+const closeExamplesModal = () => {
+  showExamplesModal.value = false;
 };
 </script>
 
@@ -413,7 +452,7 @@ const submitOrder = async () => {
               <button class="tab-option-btn">
                 Технические требования к макету
               </button>
-              <button class="tab-option-btn">Примеры работ</button>
+              <button class="tab-option-btn example-btn" @click="openExamplesModal">Примеры работ</button>
               <button class="tab-option-btn">
                 Срок изготовления: <span>{{ formatProductionDays(productionDays) }}</span>
               </button>
@@ -439,6 +478,12 @@ const submitOrder = async () => {
   </div>
 
   <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
+
+  <ExamplesModal
+    :is-open="showExamplesModal"
+    :examples="pageExamples"
+    @close="closeExamplesModal"
+  />
 </template>
 
 <style scoped>

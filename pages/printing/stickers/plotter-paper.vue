@@ -41,6 +41,7 @@ const formatProductionDays = (days: number | undefined): string => {
 const productionDays = ref<number | undefined>(1);
 const pageImage = ref<string>("");
 const pageDescription = ref<string>("");
+const pageExamples = ref<string[]>([]);
 
 // Дефолтное изображение для страницы
 const defaultImage = "/img/stick/2.png";
@@ -51,6 +52,7 @@ const updatePageMeta = () => {
   const newProductionDays = meta.productionDays ?? 1;
   const newImage = meta.imageUrl || defaultImage;
   const newDescription = meta.description || "";
+  const newExamples = meta.examples || [];
 
   if (productionDays.value !== newProductionDays) {
     productionDays.value = newProductionDays;
@@ -60,6 +62,9 @@ const updatePageMeta = () => {
   }
   if (pageDescription.value !== newDescription) {
     pageDescription.value = newDescription;
+  }
+  if (JSON.stringify(pageExamples.value) !== JSON.stringify(newExamples)) {
+    pageExamples.value = newExamples;
   }
 };
 
@@ -180,6 +185,17 @@ const submitOrder = async () => {
     totalPrice,
   });
 };
+
+// Модалка примеров работ
+const showExamplesModal = ref(false);
+
+const openExamplesModal = () => {
+  showExamplesModal.value = true;
+};
+
+const closeExamplesModal = () => {
+  showExamplesModal.value = false;
+};
 </script>
 
 <template>
@@ -217,7 +233,7 @@ const submitOrder = async () => {
               <button class="tab-option-btn">
                 Технические требования к макету
               </button>
-              <button class="tab-option-btn">Примеры работ</button>
+              <button class="tab-option-btn example-btn" @click="openExamplesModal">Примеры работ</button>
               <button class="tab-option-btn">
                 Срок изготовления: <span>{{ productionDaysText }}</span>
               </button>
@@ -243,6 +259,12 @@ const submitOrder = async () => {
   </div>
 
   <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
+
+  <ExamplesModal
+    :is-open="showExamplesModal"
+    :examples="pageExamples"
+    @close="closeExamplesModal"
+  />
 </template>
 
 <style scoped>

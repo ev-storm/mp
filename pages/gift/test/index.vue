@@ -39,13 +39,19 @@ const formatProductionDays = (days: number | undefined): string => {
 
 // Метаданные страницы (срок изготовления) - реактивные, обновляются динамически
 const productionDays = ref<number | undefined>(1);
+const pageExamples = ref<string[]>([]);
 
 // Обновить метаданные из localStorage
 const updateProductionDays = () => {
   const pageMeta = getPageMeta(pageKey);
   const newValue = pageMeta.productionDays ?? 1;
+  const newExamples = pageMeta.examples || [];
+  
   if (productionDays.value !== newValue) {
     productionDays.value = newValue;
+  }
+  if (JSON.stringify(pageExamples.value) !== JSON.stringify(newExamples)) {
+    pageExamples.value = newExamples;
   }
 };
 
@@ -136,6 +142,17 @@ const submitOrder = async () => {
     totalPrice,
   });
 };
+
+// Модалка примеров работ
+const showExamplesModal = ref(false);
+
+const openExamplesModal = () => {
+  showExamplesModal.value = true;
+};
+
+const closeExamplesModal = () => {
+  showExamplesModal.value = false;
+};
 </script>
 
 <template>
@@ -152,7 +169,7 @@ const submitOrder = async () => {
               <button class="tab-option-btn">
                 Технические требования к макету
               </button>
-              <button class="tab-option-btn">Примеры работ</button>
+              <button class="tab-option-btn example-btn" @click="openExamplesModal">Примеры работ</button>
               <button class="tab-option-btn">
                 Срок изготовления: <span>{{ productionDaysText }}</span>
               </button>
@@ -179,6 +196,12 @@ const submitOrder = async () => {
   </div>
 
   <Toast :message="toastMessage" :show="showToast" @close="closeToast" />
+
+  <ExamplesModal
+    :is-open="showExamplesModal"
+    :examples="pageExamples"
+    @close="closeExamplesModal"
+  />
 </template>
 
 <style scoped>

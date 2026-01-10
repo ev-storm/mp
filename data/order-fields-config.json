@@ -1,6 +1,15 @@
 {
   "tracing": [
     {
+      "id": "quantity",
+      "type": "input",
+      "label": "Тираж",
+      "placeholder": "Введите количество",
+      "inputType": "number",
+      "min": 1,
+      "value": null
+    },
+    {
       "id": "format",
       "type": "dropdown",
       "label": "Формат тест",
@@ -40,15 +49,6 @@
           "price": 50
         }
       ],
-      "value": null
-    },
-    {
-      "id": "quantity",
-      "type": "input",
-      "label": "Тираж",
-      "placeholder": "Введите количество",
-      "inputType": "number",
-      "min": 1,
       "value": null
     }
   ],
@@ -168,6 +168,27 @@
       "placeholder": "Введите количество",
       "inputType": "number",
       "min": 1,
+      "value": null
+    },
+    {
+      "id": "field-1768082909165",
+      "type": "dropdown",
+      "label": "1",
+      "placeholder": "Выберите значение",
+      "options": [
+        {
+          "label": "2",
+          "price": 10
+        },
+        {
+          "label": "3",
+          "price": 20
+        },
+        {
+          "label": "4",
+          "price": 30
+        }
+      ],
       "value": null
     }
   ],
@@ -433,8 +454,174 @@
       "value": null
     }
   ],
-  "booklet-laser": [],
-  "booklet-ofset": [],
+  "booklet-laser": [
+    {
+      "id": "field-1767994861103",
+      "type": "dropdown",
+      "label": "Сложение",
+      "placeholder": "Выберите значение",
+      "options": [
+        {
+          "label": "без сложений (Листовка)",
+          "price": 100
+        },
+        {
+          "label": "1 сложение (Книжка)",
+          "price": 200
+        },
+        {
+          "label": "2 сложения (Евробуклет)",
+          "price": 300
+        },
+        {
+          "label": "2 сложения (Гармошка )",
+          "price": 400
+        },
+        {
+          "label": "3 сложения (Гармошка )",
+          "price": 500
+        },
+        {
+          "label": "4 сложения (Гармошка )",
+          "price": 600
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "field-1768083797571",
+      "type": "toggle",
+      "label": "Биговка",
+      "value": false,
+      "price": 220,
+      "tooltip": "Сложение листа по биговке при высокой плотности бумаги предотвращает трещины краски и обеспечивает точный, лёгкий фальц."
+    },
+    {
+      "id": "field-1768084786796",
+      "type": "dropdown",
+      "label": "Плотность бумаги",
+      "placeholder": "Выберите значение",
+      "options": [
+        {
+          "label": "80 г/м²",
+          "price": 100
+        },
+        {
+          "label": "100 г/м²",
+          "price": 200
+        },
+        {
+          "label": "120 г/м²",
+          "price": 300
+        },
+        {
+          "label": "150 г/м²",
+          "price": 400
+        },
+        {
+          "label": "180 г/м²",
+          "price": 500
+        },
+        {
+          "label": "200 г/м²",
+          "price": 600
+        },
+        {
+          "label": "250 г/м²",
+          "price": 700
+        },
+        {
+          "label": "300 г/м²",
+          "price": 0
+        }
+      ],
+      "value": null
+    }
+  ],
+  "booklet-ofset": [
+    {
+      "id": "field-1768082988384",
+      "type": "dropdown",
+      "label": "Сложение",
+      "placeholder": "Выберите значение",
+      "options": [
+        {
+          "label": "без сложений (Листовка)",
+          "price": 100
+        },
+        {
+          "label": "1 сложение (Книжка)",
+          "price": 200
+        },
+        {
+          "label": "2 сложения (Евробуклет)",
+          "price": 300
+        },
+        {
+          "label": "2 сложения (Гармошка )",
+          "price": 400
+        },
+        {
+          "label": "3 сложения (Гармошка )",
+          "price": 500
+        },
+        {
+          "label": "4 сложения (Гармошка )",
+          "price": 600
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "field-1768082990093",
+      "type": "toggle",
+      "label": "Биговка",
+      "value": false,
+      "price": 220,
+      "tooltip": "Сложение листа по биговке при высокой плотности бумаги предотвращает трещины краски и обеспечивает точный, лёгкий фальц."
+    },
+    {
+      "id": "field-1768086053122",
+      "type": "dropdown",
+      "label": "Плотность бумаги",
+      "placeholder": "Выберите значение",
+      "options": [
+        {
+          "label": "80 г/м²",
+          "price": 100
+        },
+        {
+          "label": "100 г/м²",
+          "price": 200
+        },
+        {
+          "label": "120 г/м²",
+          "price": 300
+        },
+        {
+          "label": "150 г/м²",
+          "price": 400
+        },
+        {
+          "label": "180 г/м²",
+          "price": 500
+        },
+        {
+          "label": "200 г/м²",
+          "price": 600
+        },
+        {
+          "label": "250 г/м²",
+          "price": 700
+        },
+        {
+          "label": "300 г/м²",
+          "price": 0
+        }
+      ],
+      "value": null
+    }
+  ],
   "visit-card-laser": [],
   "visit-card-ofset": [],
   "visit-card-uf": [],
