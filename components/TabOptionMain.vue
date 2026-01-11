@@ -19,8 +19,10 @@ const props = defineProps<{
       />
 
       <!-- Toggle -->
-
-      <div v-else-if="field.type === 'toggle'" class="toggle-group">
+      <div
+        v-if="field.type === 'toggle'"
+        class="toggle-group"
+      >
         <label class="toggle-switch">
           <input type="checkbox" v-model="field.value" />
           <span class="toggle-slider"></span>
@@ -37,7 +39,10 @@ const props = defineProps<{
       </div>
 
       <!-- Input -->
-      <div v-else-if="field.type === 'input'" class="input-group">
+      <div
+        v-if="field.type === 'input'"
+        class="input-group"
+      >
         <label class="input-label">{{ field.label }}</label>
         <input
           v-model="field.value"
