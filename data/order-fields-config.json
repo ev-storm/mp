@@ -8,7 +8,7 @@
       "options": [
         {
           "label": "А4 (210x297 мм)",
-          "price": 26
+          "price": 25
         },
         {
           "label": "А3 (297×420 мм)",
@@ -236,41 +236,18 @@
       "placeholder": "Выберите формат",
       "options": [
         {
-          "label": "А6 (105×148 мм)",
-          "price": 3
-        },
-        {
-          "label": "А5 (148×210 мм)",
-          "price": 5
-        },
-        {
           "label": "А4 (210×297 мм)",
-          "price": 8
+          "price": [
+            30,
+            20,
+            10
+          ],
+          "priceString": "30,20,10"
         },
         {
           "label": "А3 (297×420 мм)",
-          "price": 15
-        },
-        {
-          "label": "Евро (99×210 мм)",
-          "price": 6
-        }
-      ],
-      "value": null
-    },
-    {
-      "id": "color",
-      "type": "dropdown",
-      "label": "Цвет печати",
-      "placeholder": "Выберите цвет печати",
-      "options": [
-        {
-          "label": "Черно-белая",
-          "price": 0
-        },
-        {
-          "label": "Цветная",
-          "price": 50
+          "price": 0,
+          "priceString": ""
         }
       ],
       "value": null
@@ -282,7 +259,13 @@
       "placeholder": "Введите количество",
       "inputType": "number",
       "min": 1,
-      "value": null
+      "value": null,
+      "thresholdsString": "11, 21, 31",
+      "thresholds": [
+        10,
+        20,
+        30
+      ]
     },
     {
       "id": "sides",
@@ -308,11 +291,11 @@
       "placeholder": "Cкорость сканирования",
       "options": [
         {
-          "label": "Автоподачик",
+          "label": "Потоковый",
           "price": 200
         },
         {
-          "label": "Потоковая",
+          "label": "Ручной",
           "price": 100
         }
       ],
@@ -323,7 +306,7 @@
       "type": "toggle",
       "label": "Разпознования текста",
       "tooltip": "Разпознования текста...",
-      "price": 300,
+      "price": 300.1,
       "value": false
     }
   ],
@@ -641,7 +624,120 @@
   "large-print": [],
   "large-scan": [],
   "large-plan": [],
-  "scan-print": [],
+  "scan-print": [
+    {
+      "id": "quantity",
+      "type": "input",
+      "label": "Тираж",
+      "placeholder": "Введите количество",
+      "value": null,
+      "inputType": "number",
+      "thresholdsString": "5, 10, 100, 300, 500",
+      "thresholds": [
+        4,
+        9,
+        99,
+        299,
+        499
+      ],
+      "min": 1
+    },
+    {
+      "id": "format-A4",
+      "type": "dropdown-multiply",
+      "label": "Формат",
+      "placeholder": "Выберите формат",
+      "options": [
+        {
+          "label": "А4 (210×297 мм)",
+          "price": [
+            1
+          ],
+          "priceString": "1"
+        },
+        {
+          "label": "А3 (297×420 мм)",
+          "price": [
+            2
+          ],
+          "priceString": "2"
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "sides",
+      "type": "dropdown-multiply",
+      "label": "Стороны",
+      "placeholder": "Выберите значение",
+      "options": [
+        {
+          "label": "Односторонняя",
+          "price": [
+            1
+          ],
+          "priceString": "1"
+        },
+        {
+          "label": "Двусторонняя",
+          "price": [
+            1.5
+          ],
+          "priceString": "1.5"
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "plot",
+      "type": "dropdown",
+      "label": "Плотность бумаги",
+      "placeholder": "Выберите значение",
+      "options": [
+        {
+          "label": "80 г/м²",
+          "price": [
+            56,
+            48,
+            43,
+            38,
+            32,
+            27
+          ],
+          "priceString": "56,48,43,38,32,27"
+        },
+        {
+          "label": "100 г/м²",
+          "price": 0
+        },
+        {
+          "label": "130 г/м²",
+          "price": 0
+        },
+        {
+          "label": "150 г/м²",
+          "price": 0
+        },
+        {
+          "label": "170 г/м²",
+          "price": 0
+        },
+        {
+          "label": "200 г/м²",
+          "price": 0
+        },
+        {
+          "label": "250 г/м²",
+          "price": 0
+        },
+        {
+          "label": "300 г/м²",
+          "price": 0
+        }
+      ],
+      "value": null
+    }
+  ],
   "photo-test": [],
   "gift-test": [],
   "publish-test": [],

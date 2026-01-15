@@ -236,6 +236,14 @@ const loadConfig = async () => {
       const pageKey = key as PageConfigKey;
       const fields = loadedConfig[pageKey] || [];
 
+      // Инициализируем thresholdsString для полей quantity
+      // Прибавляем 1 к каждому порогу для отображения (так как при сохранении вычитали 1)
+      fields.forEach((field: any) => {
+        if (field.type === "input" && field.id === "quantity" && field.thresholds) {
+          (field as any).thresholdsString = field.thresholds.map((t: number) => t + 1).join(", ");
+        }
+      });
+
       // Если ключ уже существует, обновляем массив через splice для сохранения реактивности
       if (config[pageKey] && Array.isArray(config[pageKey])) {
         config[pageKey].splice(0, config[pageKey].length, ...fields);
@@ -546,7 +554,7 @@ const executeDelete = () => {
   } else if (type === "option" && optionIndex !== null) {
     // Удалить опцию
     const field = config[pageKey]?.[fieldIndex];
-    if (field && field.type === "dropdown") {
+    if (field && (field.type === "dropdown" || field.type === "dropdown-multiply")) {
       field.options.splice(optionIndex, 1);
     }
   }
@@ -604,14 +612,148 @@ const handleFieldTypeChange = (field: any, fieldIndex: number) => {
       field.options = [{ label: "Опция 1", price: 0 }];
     }
     if (field.value === null || field.value === undefined) field.value = null;
+  } else if (field.type === "dropdown-multiply") {
+    // Преобразуем в dropdown-multiply поле
+    delete field.price;
+    delete field.tooltip;
+    delete field.inputType;
+    delete field.min;
+    delete field.max;
+    // Устанавливаем свойства dropdown-multiply, если их нет
+    if (!field.placeholder) field.placeholder = "Выберите значение";
+    if (!field.options || !Array.isArray(field.options)) {
+      field.options = [{ label: "Опция 1", price: 1 }];
+    }
+    if (field.value === null || field.value === undefined) field.value = null;
   }
+};
+
+// Обновить пороги из строки
+const updateThresholds = (fieldIndex: number) => {
+  if (!selectedPage.value) return;
+  const field = config[selectedPage.value]?.[fieldIndex];
+  if (field && field.type === "input" && field.id === "quantity") {
+    const thresholdsString = (field as any).thresholdsString || "";
+    if (thresholdsString.trim()) {
+      const thresholds = thresholdsString
+        .split(",")
+        .map((t: string) => parseFloat(t.trim()) - 1) // Вычитаем 1 из каждого порога
+        .filter((t: number) => !isNaN(t))
+        .sort((a: number, b: number) => a - b);
+      field.thresholds = thresholds.length > 0 ? thresholds : undefined;
+    } else {
+      field.thresholds = undefined;
+    }
+  }
+};
+
+// Получить строку порогов для отображения
+const getThresholdsString = (field: any): string => {
+  if (field.type === "input" && field.id === "quantity" && field.thresholds) {
+    // Прибавляем 1 к каждому порогу для отображения (так как при сохранении вычитали 1)
+    return field.thresholds.map((t: number) => t + 1).join(", ");
+  }
+  return (field as any).thresholdsString || "";
+};
+
+// Проверить, есть ли пороги в текущей странице
+const hasThresholds = (): boolean => {
+  if (!selectedPage.value) return false;
+  const quantityField = config[selectedPage.value]?.find(
+    (f: OrderField) => f.id === "quantity" && f.type === "input"
+  );
+  return (
+    quantityField !== undefined &&
+    quantityField.type === "input" &&
+    quantityField.thresholds !== undefined &&
+    Array.isArray(quantityField.thresholds) &&
+    quantityField.thresholds.length > 0
+  );
+};
+
+// Получить пороги текущей страницы
+const getCurrentThresholds = (): number[] | undefined => {
+  if (!selectedPage.value) return undefined;
+  const quantityField = config[selectedPage.value]?.find(
+    (f: OrderField) => f.id === "quantity" && f.type === "input"
+  );
+  if (quantityField && quantityField.type === "input") {
+    return quantityField.thresholds;
+  }
+  return undefined;
+};
+
+// Получить строку цены для отображения
+const getPriceString = (price: number | number[]): string => {
+  if (typeof price === "number") {
+    return price.toString();
+  }
+  if (Array.isArray(price)) {
+    return price.join(", ");
+  }
+  return "";
+};
+
+// Обновить цену опции из строки (вызывается при blur)
+const updateOptionPrice = (
+  fieldIndex: number,
+  optionIndex: number,
+  priceString: string
+) => {
+  if (!selectedPage.value) return;
+  const field = config[selectedPage.value]?.[fieldIndex];
+  if (field && (field.type === "dropdown" || field.type === "dropdown-multiply") && field.options[optionIndex]) {
+    const thresholds = getCurrentThresholds();
+    if (thresholds && thresholds.length > 0) {
+      // Если есть пороги, парсим массив
+      const prices = priceString
+        .split(",")
+        .map((p) => parseFloat(p.trim()))
+        .filter((p) => !isNaN(p));
+      if (prices.length > 0) {
+        field.options[optionIndex].price = prices;
+      } else {
+        // Если не удалось распарсить, оставляем как есть или устанавливаем 0
+        field.options[optionIndex].price = 0;
+      }
+    } else {
+      // Если нет порогов, парсим одно число
+      const price = parseFloat(priceString.trim());
+      field.options[optionIndex].price = isNaN(price) ? 0 : price;
+    }
+  }
+};
+
+// Сохранить промежуточное значение цены (для отображения во время ввода)
+const savePriceString = (
+  fieldIndex: number,
+  optionIndex: number,
+  priceString: string
+) => {
+  if (!selectedPage.value) return;
+  const field = config[selectedPage.value]?.[fieldIndex];
+  if (field && (field.type === "dropdown" || field.type === "dropdown-multiply") && field.options[optionIndex]) {
+    // Сохраняем строку во временное поле для отображения
+    (field.options[optionIndex] as any).priceString = priceString;
+  }
+};
+
+// Получить строку цены для отображения (с учетом промежуточного значения)
+const getPriceStringForInput = (option: any): string => {
+  // Если есть промежуточное значение (во время ввода), используем его
+  if ((option as any).priceString !== undefined) {
+    return (option as any).priceString;
+  }
+  // Иначе используем сохраненное значение
+  return getPriceString(option.price);
 };
 
 // Добавить опцию в dropdown
 const addOption = (pageKey: PageConfigKey, fieldIndex: number) => {
   const field = config[pageKey]?.[fieldIndex];
-  if (field && field.type === "dropdown") {
-    field.options.push({ label: "Новая опция", price: 0 });
+  if (field && (field.type === "dropdown" || field.type === "dropdown-multiply")) {
+    const defaultPrice = field.type === "dropdown-multiply" ? 1 : 0;
+    field.options.push({ label: "Новая опция", price: defaultPrice });
   }
 };
 
@@ -995,6 +1137,9 @@ const handleImageUpload = async (event: Event) => {
 // Состояние открытых/закрытых карточек полей
 const expandedFields = ref<Set<number>>(new Set());
 
+// Состояние активной кнопки управления карточками
+const activeButton = ref<"close" | "open" | null>(null);
+
 // Переключить состояние карточки поля
 const toggleFieldCard = (fieldIndex: number) => {
   if (expandedFields.value.has(fieldIndex)) {
@@ -1002,11 +1147,31 @@ const toggleFieldCard = (fieldIndex: number) => {
   } else {
     expandedFields.value.add(fieldIndex);
   }
+  // Сбрасываем состояние кнопок при ручном изменении
+  activeButton.value = null;
 };
 
 // Проверить, открыта ли карточка
 const isFieldExpanded = (fieldIndex: number) => {
   return expandedFields.value.has(fieldIndex);
+};
+
+// Свернуть все карточки
+const collapseAllFields = () => {
+  if (!selectedPage.value) return;
+  const fields = config[selectedPage.value] || [];
+  expandedFields.value.clear();
+  activeButton.value = "close";
+};
+
+// Развернуть все карточки
+const expandAllFields = () => {
+  if (!selectedPage.value) return;
+  const fields = config[selectedPage.value] || [];
+  fields.forEach((_: OrderField, index: number) => {
+    expandedFields.value.add(index);
+  });
+  activeButton.value = "open";
 };
 
 // Инициализировать метаданные страницы, если их нет
@@ -1097,6 +1262,8 @@ watch(selectedPage, (newPage: PageConfigKey | null) => {
     });
     // Инициализируем метаданные страницы, если их нет
     initPageMeta(newPage);
+    // Сбрасываем состояние кнопок при смене страницы
+    activeButton.value = null;
   }
 });
 
@@ -1231,7 +1398,25 @@ watch(
             ></textarea>
           </div>
 
-          <!-- Настройки страницы -->
+          <div class="page-text-btn-open">
+            <div class="adm-btn-con">
+              <button 
+                class="adm-btn-close"
+                :class="{ active: activeButton === 'close' }"
+                @click="collapseAllFields"
+              >
+                <img src="/assets/svg/adm-btn-close.svg" alt="">
+              </button>
+              <button 
+                class="adm-btn-open"
+                :class="{ active: activeButton === 'open' }"
+                @click="expandAllFields"
+              >
+                <img src="/assets/svg/adm-btn-open.svg" alt="">
+              </button>
+            </div>
+
+          </div>
 
           <div v-if="currentFields.length === 0" class="empty-fields">
             <p>На этой странице пока нет полей</p>
@@ -1334,6 +1519,7 @@ watch(
                       @change="handleFieldTypeChange(field, fieldIndex)"
                     >
                       <option value="dropdown">Dropdown</option>
+                      <option value="dropdown-multiply">Dropdown-multiply</option>
                       <option value="input">Input</option>
                       <option value="toggle">Toggle</option>
                     </select>
@@ -1348,7 +1534,7 @@ watch(
                     />
                   </div>
 
-                  <div v-if="field.type === 'dropdown'" class="form-group">
+                  <div v-if="field.type === 'dropdown' || field.type === 'dropdown-multiply'" class="form-group">
                     <label>Placeholder</label>
                     <input
                       v-model="field.placeholder"
@@ -1384,6 +1570,27 @@ watch(
                     <input v-model.number="field.min" type="number" />
                   </div>
 
+                  <div
+                    v-if="
+                      field.type === 'input' &&
+                      field.id === 'quantity' &&
+                      field.inputType === 'number'
+                    "
+                    class="form-group"
+                    style="width: 100%"
+                  >
+                    <label>Пороги</label>
+                    <input
+                      :value="getThresholdsString(field)"
+                      @input="(e: Event) => { (field as any).thresholdsString = (e.target as HTMLInputElement).value; }"
+                      type="text"
+                      @blur="updateThresholds(fieldIndex)"
+                    />
+                    <small style="color: var(--grey); font-size: 11px; margin-top: 5px; display: block;">
+                      через запятую, например: 5, 50, 100
+                    </small>
+                  </div>
+
                   <div v-if="field.type === 'toggle'" class="form-group">
                     <label>Цена</label>
                     <input v-model.number="field.price" type="number" />
@@ -1399,8 +1606,8 @@ watch(
                   </div>
                 </div>
 
-                <!-- Опции для dropdown -->
-                <div v-if="field.type === 'dropdown'" class="options-section">
+                <!-- Опции для dropdown и dropdown-multiply -->
+                <div v-if="field.type === 'dropdown' || field.type === 'dropdown-multiply'" class="options-section">
                   <div class="options-header">
                     <label>Опции</label>
                     <button
@@ -1423,12 +1630,16 @@ watch(
                       placeholder="Название опции"
                       class="option-label"
                     />
-                    <input
-                      v-model.number="option.price"
-                      type="number"
-                      placeholder="Цена"
-                      class="option-price"
-                    />
+                    <div class="option-price-wrapper" style="width: 30%; display: flex; flex-direction: column;">
+                      <input
+                        :value="getPriceStringForInput(option)"
+                        @input="(e: Event) => savePriceString(fieldIndex, optionIndex, (e.target as HTMLInputElement).value)"
+                        @blur="(e: Event) => updateOptionPrice(fieldIndex, optionIndex, (e.target as HTMLInputElement).value)"
+                        type="text"
+                        class="option-price"
+                      />
+ 
+                    </div>
                     <button
                       v-if="selectedPage"
                       @click="
@@ -2137,7 +2348,7 @@ watch(
   border-radius: 4px;
   font-size: 12px;
   background: var(--back);
-  width: 30%;
+  width: 100%;
   color: var(--grey);
 }
 
@@ -2179,7 +2390,6 @@ watch(
   gap: 10px;
   height: 10vh;
   justify-content: space-between;
-  margin: 10px 0;
   padding: 10px;
   transition: all 0.3s ease-in-out;
 }
@@ -2236,7 +2446,7 @@ watch(
   opacity: 1;
 }
 .page-text-con:hover {
-  height: 30vh;
+  height: 20vh;
 }
 
 .btn-secondary {
@@ -2303,6 +2513,39 @@ watch(
 .empty-pages p {
   margin: 0;
 }
+.page-text-btn-open{
+    display: flex;
+    padding: 10px 5px 5px 5px;
+    justify-content: end;
+    width: 100%;
+  }
+  .adm-btn-con{
+    display: flex;
+    gap:10px;
+ 
+  }
+  .adm-btn-con button{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 10px;
+    cursor: pointer;
+    border: none;
+    /* border: solid 2px var(--blue); */
+    border-radius: 5px; 
+    background: var(--white);
+    transition: var(--tran);
+  }
+  .adm-btn-con button:active{
+    scale: 0.9;
+
+  } 
+  .adm-btn-con button.active{
+    background: var(--blue);
+  }
+  .adm-btn-con button.active img{
+    filter: brightness(0) invert(1);
+  }
 
 /* Планшеты */
 @media (max-width: 1024px) {
@@ -2433,7 +2676,7 @@ watch(
     flex-wrap: wrap;
     gap: 10px;
   }
-
+ 
   .field-header h3 {
     font-size: 16px;
     flex: 1;

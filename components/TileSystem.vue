@@ -310,7 +310,7 @@ const getTileLink = (tile: Tile): string => {
   color: inherit;
 }
 .tile-card:hover {
-  scale: 1.03;
+  scale: 0.98;
   box-shadow: #00000030 0 0px 10px;
 }
 .tile-card-img-con {

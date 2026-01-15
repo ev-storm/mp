@@ -18,6 +18,15 @@ const props = defineProps<{
         :options="field.options"
       />
 
+      <!-- Dropdown-multiply -->
+      <Dropdown
+        v-if="field.type === 'dropdown-multiply'"
+        v-model="field.value"
+        :label="field.label"
+        :placeholder="field.placeholder"
+        :options="field.options"
+      />
+
       <!-- Toggle -->
       <div
         v-if="field.type === 'toggle'"

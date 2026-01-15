@@ -39,6 +39,7 @@ const emit = defineEmits<{
 const getFieldDisplayValue = (field: OrderField): string | null => {
   switch (field.type) {
     case "dropdown":
+    case "dropdown-multiply":
       return field.value?.label || null;
     case "toggle":
       return field.value ? "Да" : null;
@@ -56,6 +57,7 @@ const getFieldDisplayValue = (field: OrderField): string | null => {
 const shouldShowField = (field: OrderField): boolean => {
   switch (field.type) {
     case "dropdown":
+    case "dropdown-multiply":
       return field.value !== null;
     case "toggle":
       return field.value === true;
