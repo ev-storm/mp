@@ -122,9 +122,9 @@ const props = defineProps<{
 /* Toggle styles */
 .toggle-group {
   display: flex;
-  align-items: center;
-  width: 30%;
-  margin: 10px 0;
+  align-items: flex-end;
+    width: 30%;
+    margin: 13px 0;
   gap: 12px;
 }
 

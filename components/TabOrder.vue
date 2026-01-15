@@ -296,6 +296,7 @@ const toggleDescription = () => {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
+  overflow: scroll;
 }
 
 .tab-order-name {

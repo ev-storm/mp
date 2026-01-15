@@ -24,3 +24,10 @@ yarn-error.log*
 # Local env files
 .env
 
+# Admin-generated order config
+# data/order-fields-config.json
+# data/order-fields-meta.json
+
+# Uploaded files (images and examples)
+public/uploads/
+

@@ -1,73 +1,137 @@
-import { createS3Client, uploadToS3, getPublicUrl } from "~/server/utils/s3-client";
+// API endpoint для загрузки изображений на сервер
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
+import { existsSync } from "fs";
+import { createHash } from "crypto";
 
-export default defineEventHandler(async (event) => {
+// Функция проверки аутентификации
+const checkAuth = (event: any): boolean => {
   try {
-    // Проверка аутентификации через токен из cookie, header или x-auth-token
-    const token = 
-      getCookie(event, "admin-auth-token") || 
-      getHeader(event, "authorization")?.replace("Bearer ", "") ||
-      getHeader(event, "x-auth-token");
-    
-    if (!token) {
-      throw createError({
-        statusCode: 401,
-        statusMessage: "Unauthorized - токен не предоставлен",
-      });
-    }
+    const authToken = getCookie(event, "admin-auth-token");
+    if (!authToken) return false;
 
     const config = useRuntimeConfig();
+    const adminSecretKey =
+      config.adminSecretKey || process.env.ADMIN_SECRET_KEY;
+    if (!adminSecretKey) return false;
+
+    const expectedToken = createHash("sha256")
+      .update(adminSecretKey + "-admin")
+      .digest("hex");
+
+    return authToken === expectedToken;
+  } catch {
+    return false;
+  }
+};
+
+export default defineEventHandler(async (event) => {
+  if (event.node.req.method !== "POST") {
+    throw createError({
+      statusCode: 405,
+      statusMessage: "Method Not Allowed",
+    });
+  }
+
+  // Проверяем аутентификацию
+  const isAuthenticated = checkAuth(event);
+  if (!isAuthenticated) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Требуется аутентификация",
+    });
+  }
+
+  try {
+    // Получаем multipart/form-data
+    const formData = await readMultipartFormData(event);
     
-    // Конфигурация Yandex Object Storage
-    const YANDEX_ENDPOINT = config.yandexStorageEndpoint || "https://storage.yandexcloud.net";
-    const YANDEX_REGION = config.yandexStorageRegion || "ru-central1";
-    const YANDEX_BUCKET = config.yandexStorageBucket || "";
-    const YANDEX_ACCESS_KEY_ID = config.yandexStorageAccessKeyId || "";
-    const YANDEX_SECRET_ACCESS_KEY = config.yandexStorageSecretAccessKey || "";
-
-    if (!YANDEX_BUCKET || !YANDEX_ACCESS_KEY_ID || !YANDEX_SECRET_ACCESS_KEY) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Yandex Storage не настроен. Проверьте переменные окружения.",
-      });
-    }
-
-    // Получаем файл из body
-    const body = await readBody(event);
-    const { pageKey, imageData } = body;
-
-    if (!pageKey || !imageData) {
+    if (!formData || formData.length === 0) {
       throw createError({
         statusCode: 400,
-        statusMessage: "Не указаны pageKey или imageData",
+        statusMessage: "Файл не предоставлен",
       });
     }
 
-    // Извлекаем base64 данные (удаляем префикс data:image/...;base64,)
-    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, "");
-    const imageBuffer = Buffer.from(base64Data, "base64");
+    // Ищем файл и pageKey в formData
+    let file: any = null;
+    let pageKey: string | null = null;
+    let fileType: string = "image"; // image или example
 
-    // Определяем расширение файла из исходных данных
-    const mimeMatch = imageData.match(/^data:image\/(\w+);base64,/);
-    const extension = mimeMatch ? mimeMatch[1] : "png";
-    const contentType = `image/${extension}`;
+    for (const item of formData) {
+      if (item.name === "file" && item.filename) {
+        file = item;
+      } else if (item.name === "pageKey" && item.data) {
+        pageKey = item.data.toString("utf-8");
+      } else if (item.name === "fileType" && item.data) {
+        fileType = item.data.toString("utf-8");
+      }
+    }
 
-    // Генерируем имя файла: pageKey-timestamp.extension
+    if (!file || !file.filename) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Файл не найден в запросе",
+      });
+    }
+
+    if (!pageKey) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "pageKey не указан",
+      });
+    }
+
+    // Проверяем тип файла
+    const contentType = file.type || "image/jpeg";
+    if (!contentType.startsWith("image/")) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Файл должен быть изображением",
+      });
+    }
+
+    // Проверяем размер файла (максимум 10 МБ)
+    if (file.data.length > 10 * 1024 * 1024) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Размер файла не должен превышать 10 МБ",
+      });
+    }
+
+    // Определяем расширение файла
+    const extension = file.filename.split(".").pop() || "jpg";
+    const allowedExtensions = ["jpg", "jpeg", "png", "gif", "webp"];
+    if (!allowedExtensions.includes(extension.toLowerCase())) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Неподдерживаемый формат изображения",
+      });
+    }
+
+    // Создаем директорию для загрузок, если её нет
+    const uploadsDir = join(process.cwd(), "public", "uploads");
+    if (!existsSync(uploadsDir)) {
+      await mkdir(uploadsDir, { recursive: true });
+    }
+
+    // Создаем подпапку по типу файла (images или examples)
+    const typeDir = join(uploadsDir, fileType === "example" ? "examples" : "images");
+    if (!existsSync(typeDir)) {
+      await mkdir(typeDir, { recursive: true });
+    }
+
+    // Генерируем уникальное имя файла: pageKey-timestamp.extension
     const timestamp = Date.now();
-    const fileName = `images/${pageKey}-${timestamp}.${extension}`;
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const fileName = `${pageKey}-${timestamp}-${randomSuffix}.${extension}`;
+    const filePath = join(typeDir, fileName);
 
-    // Создаем S3 клиент и загружаем файл
-    const s3Client = createS3Client({
-      endpoint: YANDEX_ENDPOINT,
-      region: YANDEX_REGION,
-      bucket: YANDEX_BUCKET,
-      accessKeyId: YANDEX_ACCESS_KEY_ID,
-      secretAccessKey: YANDEX_SECRET_ACCESS_KEY,
-    });
+    // Сохраняем файл на диск
+    await writeFile(filePath, file.data);
 
-    await uploadToS3(s3Client, YANDEX_BUCKET, fileName, imageBuffer, contentType);
-
-    // Формируем публичный URL
-    const publicUrl = getPublicUrl(YANDEX_BUCKET, fileName);
+    // Формируем публичный URL (относительный путь от public)
+    const publicUrl = `/uploads/${fileType === "example" ? "examples" : "images"}/${fileName}`;
 
     return {
       success: true,
@@ -82,4 +146,3 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-

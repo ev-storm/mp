@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { reactive, computed, ref } from "vue";
 import type { OrderField } from "~/types/order-fields";
-import {
-  calculateTotalPrice,
-  getQuantityFromFields,
-} from "~/types/order-fields";
+import { getQuantityFromFields } from "~/types/order-fields";
 import {
   type PageConfigKey,
 } from "~/config/order-fields-config";
@@ -59,14 +56,46 @@ const productionDaysText = computed(() =>
 const isDesignActive = ref(false);
 const designPrice = 1500;
 
-// Вычисляем общую стоимость
+// Вычисляем общую стоимость с учетом спец. правила для tracing
 const totalPrice = computed(() => {
   const quantity = getQuantityFromFields(fields);
-  return calculateTotalPrice(
-    fields,
-    quantity,
-    isDesignActive.value ? designPrice : 0
+
+  // Проверяем, активен ли спец-переключатель "Заполнение"
+  const isFillActive = fields.some(
+    (field) =>
+      field.id === "field-1768398465899" &&
+      field.type === "toggle" &&
+      field.value
   );
+
+  let sum = 0;
+
+  for (const field of fields as OrderField[]) {
+    switch (field.type) {
+      case "dropdown": {
+        if (field.value) {
+          let price = field.value.price;
+
+          // printing/tracing: если "Заполнение" активно — увеличиваем формат х2
+          if (isFillActive && field.id === "format") {
+            price *= 2;
+          }
+
+          sum += price;
+        }
+        break;
+      }
+      case "toggle": {
+        if (field.value) {
+          sum += field.price;
+        }
+        break;
+      }
+      // input поля цену не добавляют
+    }
+  }
+
+  return sum * quantity + (isDesignActive.value ? designPrice : 0);
 });
 
 // Файл макета
