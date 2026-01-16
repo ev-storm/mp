@@ -242,6 +242,10 @@ const loadConfig = async () => {
         if (field.type === "input" && field.id === "quantity" && field.thresholds) {
           (field as any).thresholdsString = field.thresholds.map((t: number) => t + 1).join(", ");
         }
+        // Для всех input полей устанавливаем value: 1 по умолчанию, если значение не задано
+        if (field.type === "input" && (field.value === null || field.value === undefined || field.value === "")) {
+          field.value = 1;
+        }
       });
 
       // Если ключ уже существует, обновляем массив через splice для сохранения реактивности
@@ -295,7 +299,22 @@ const saveConfig = async () => {
     for (const key in config) {
       const pageKey = key as PageConfigKey;
       // Создаем глубокую копию массива полей
-      configToSave[pageKey] = JSON.parse(JSON.stringify(config[pageKey] || []));
+      const fields = JSON.parse(JSON.stringify(config[pageKey] || []));
+      
+      // Устанавливаем значения по умолчанию
+      for (const field of fields) {
+        if (field.type === "input") {
+          // Для input полей значение по умолчанию всегда 1
+          if (field.value === null || field.value === undefined || field.value === "") {
+            field.value = 1;
+          }
+        } else if (field.type === "dropdown" || field.type === "dropdown-multiply") {
+          // Для dropdown полей value уже установлен через чекбокс, но если его нет, оставляем null
+          // Значение уже установлено через setDefaultOption
+        }
+      }
+      
+      configToSave[pageKey] = fields;
     }
 
     // Убеждаемся, что все ключи из дефолтной конфигурации присутствуют
@@ -598,7 +617,10 @@ const handleFieldTypeChange = (field: any, fieldIndex: number) => {
     // Устанавливаем свойства input, если их нет
     if (!field.placeholder) field.placeholder = "Введите значение";
     if (!field.inputType) field.inputType = "text";
-    if (field.value === null || field.value === undefined) field.value = null;
+    // Для input полей значение по умолчанию всегда 1
+    if (field.value === null || field.value === undefined || field.value === "") {
+      field.value = 1;
+    }
   } else if (field.type === "dropdown") {
     // Преобразуем в dropdown поле
     delete field.price;
@@ -748,12 +770,55 @@ const getPriceStringForInput = (option: any): string => {
   return getPriceString(option.price);
 };
 
+// Обработчик для изменения thresholdsString
+const handleThresholdsStringInput = (field: any, value: string) => {
+  (field as any).thresholdsString = value;
+};
+
+// Обработчик для изменения priceString
+const handlePriceStringInput = (fieldIndex: number, optionIndex: number, value: string) => {
+  savePriceString(fieldIndex, optionIndex, value);
+};
+
+// Обработчик для blur priceString
+const handlePriceStringBlur = (fieldIndex: number, optionIndex: number, value: string) => {
+  updateOptionPrice(fieldIndex, optionIndex, value);
+};
+
 // Добавить опцию в dropdown
 const addOption = (pageKey: PageConfigKey, fieldIndex: number) => {
   const field = config[pageKey]?.[fieldIndex];
   if (field && (field.type === "dropdown" || field.type === "dropdown-multiply")) {
     const defaultPrice = field.type === "dropdown-multiply" ? 1 : 0;
     field.options.push({ label: "Новая опция", price: defaultPrice });
+  }
+};
+
+// Проверить, является ли опция значением по умолчанию
+const isDefaultOption = (field: OrderField, optionIndex: number): boolean => {
+  if (!field || (field.type !== "dropdown" && field.type !== "dropdown-multiply")) {
+    return false;
+  }
+  if (!field.value || !field.options || !field.options[optionIndex]) {
+    return false;
+  }
+  // Сравниваем по label, так как это самый надежный способ
+  return field.value.label === field.options[optionIndex].label;
+};
+
+// Установить опцию как значение по умолчанию
+const setDefaultOption = (fieldIndex: number, optionIndex: number) => {
+  if (!selectedPage.value) return;
+  const field = config[selectedPage.value]?.[fieldIndex];
+  if (field && (field.type === "dropdown" || field.type === "dropdown-multiply") && field.options[optionIndex]) {
+    const isCurrentlyDefault = isDefaultOption(field, optionIndex);
+    if (isCurrentlyDefault) {
+      // Если снимаем галочку, сбрасываем value
+      field.value = null;
+    } else {
+      // Устанавливаем value равным выбранной опции
+      field.value = JSON.parse(JSON.stringify(field.options[optionIndex]));
+    }
   }
 };
 
@@ -771,6 +836,140 @@ const currentFields = computed(() => {
   if (!selectedPage.value) return [];
   return config[selectedPage.value] || [];
 });
+
+// Таблица цен для scan-print
+const quantityTiers = [1, 5, 10, 100, 300, 500];
+const quantityLabels = ["1", "5+", "10+", "100+", "300+", "500+"];
+
+// Состояние для таблицы цен
+const priceTableColorMode = ref(false); // false = чб, true = цвет
+const priceTableFormats = ref([
+  { label: "А4", value: "A4" },
+  { label: "А3", value: "A3" }
+]);
+const selectedFormat = ref("A4");
+
+// Добавить новую опцию формата
+const addFormatOption = () => {
+  const newFormat = { label: "Новый формат", value: `format-${Date.now()}` };
+  priceTableFormats.value.push(newFormat);
+  selectedFormat.value = newFormat.value;
+};
+
+// Получить поле плотности бумаги
+const getPlotField = computed(() => {
+  if (!selectedPage.value || selectedPage.value !== "scan-print") return null;
+  const fields = config[selectedPage.value] || [];
+  const field = fields.find((f: OrderField) => f.id === "plot");
+  if (field && (field.type === "dropdown" || field.type === "dropdown-multiply")) {
+    return field;
+  }
+  return null;
+});
+
+// Получить опции поля плотности (исключая "100 г/м²")
+const getPlotFieldOptions = computed(() => {
+  const field = getPlotField.value;
+  if (field && (field.type === "dropdown" || field.type === "dropdown-multiply")) {
+    const options = (field as any).options || [];
+    // Исключаем "100 г/м²"
+    return options.filter((option: any) => !option.label.includes("100 г/м²"));
+  }
+  return [];
+});
+
+// Получить количество опций плотности
+const getPlotFieldOptionsCount = computed(() => {
+  return getPlotFieldOptions.value.length || 8;
+});
+
+// Получить поле дизайна (если есть)
+const getDesignField = computed(() => {
+  if (!selectedPage.value || selectedPage.value !== "scan-print") return null;
+  const fields = config[selectedPage.value] || [];
+  return fields.find((f: OrderField) => f.id === "design") || null;
+});
+
+// Получить цену для плотности и количества
+const getPriceForDensityAndQuantity = (densityOption: any, quantityIndex: number): number => {
+  if (!densityOption || !densityOption.price) return 0;
+  if (Array.isArray(densityOption.price)) {
+    return densityOption.price[quantityIndex] || 0;
+  }
+  return densityOption.price || 0;
+};
+
+// Обновить цену для плотности и количества
+const updatePriceForDensityAndQuantity = (
+  densityOption: any,
+  quantityIndex: number,
+  newPrice: number
+) => {
+  if (!densityOption) return;
+  if (!Array.isArray(densityOption.price)) {
+    densityOption.price = new Array(quantityTiers.length).fill(0);
+  }
+  densityOption.price[quantityIndex] = newPrice;
+  // Обновляем priceString
+  densityOption.priceString = densityOption.price.join(",");
+};
+
+// Обработчик для изменения цены плотности
+const handleDensityPriceChange = (option: any, qIndex: number, event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target) {
+    updatePriceForDensityAndQuantity(option, qIndex, parseFloat(target.value) || 0);
+  }
+};
+
+// Обработчик для изменения цены дизайна
+const handleDesignPriceChange = (qIndex: number, event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target) {
+    updateDesignPriceForQuantity(qIndex, parseFloat(target.value) || 0);
+  }
+};
+
+
+// Обновить цену дизайна для количества
+const updateDesignPriceForQuantity = (quantityIndex: number, newPrice: number) => {
+  if (!selectedPage.value || selectedPage.value !== "scan-print") return;
+  const designField = getDesignField.value;
+  
+  // Если поля дизайна нет, создаем его в метаданных страницы
+  if (!designField) {
+    if (!pageMeta["scan-print"]) {
+      pageMeta["scan-print"] = {};
+    }
+    if (!(pageMeta["scan-print"] as any).designPrices) {
+      (pageMeta["scan-print"] as any).designPrices = new Array(quantityTiers.length).fill(0);
+    }
+    (pageMeta["scan-print"] as any).designPrices[quantityIndex] = newPrice;
+    return;
+  }
+  
+  // Если поле есть, обновляем его price
+  if (!Array.isArray((designField as any).price)) {
+    (designField as any).price = new Array(quantityTiers.length).fill(0);
+  }
+  (designField as any).price[quantityIndex] = newPrice;
+};
+
+// Получить цену дизайна (из поля или метаданных)
+const getDesignPriceForQuantity = (quantityIndex: number): number => {
+  const designField = getDesignField.value;
+  if (designField && (designField as any).price) {
+    if (Array.isArray((designField as any).price)) {
+      return (designField as any).price[quantityIndex] || 0;
+    }
+    return (designField as any).price || 0;
+  }
+  // Проверяем метаданные
+  if (pageMeta["scan-print"] && (pageMeta["scan-print"] as any).designPrices) {
+    return (pageMeta["scan-print"] as any).designPrices[quantityIndex] || 0;
+  }
+  return 0;
+};
 
 // Получить дефолтное изображение для страницы
 const getDefaultPageImage = (pageKey: PageConfigKey | null): string => {
@@ -1582,7 +1781,7 @@ watch(
                     <label>Пороги</label>
                     <input
                       :value="getThresholdsString(field)"
-                      @input="(e: Event) => { (field as any).thresholdsString = (e.target as HTMLInputElement).value; }"
+                      @input="(e) => handleThresholdsStringInput(field, e.target.value)"
                       type="text"
                       @blur="updateThresholds(fieldIndex)"
                     />
@@ -1625,6 +1824,12 @@ watch(
                     class="option-item"
                   >
                     <input
+                      type="checkbox"
+                      :checked="isDefaultOption(field, optionIndex)"
+                      @change="setDefaultOption(fieldIndex, optionIndex)"
+                      class="option-default-checkbox"
+                    />
+                    <input
                       v-model="option.label"
                       type="text"
                       placeholder="Название опции"
@@ -1633,8 +1838,8 @@ watch(
                     <div class="option-price-wrapper" style="width: 30%; display: flex; flex-direction: column;">
                       <input
                         :value="getPriceStringForInput(option)"
-                        @input="(e: Event) => savePriceString(fieldIndex, optionIndex, (e.target as HTMLInputElement).value)"
-                        @blur="(e: Event) => updateOptionPrice(fieldIndex, optionIndex, (e.target as HTMLInputElement).value)"
+                        @input="(e) => handlePriceStringInput(fieldIndex, optionIndex, e.target.value)"
+                        @blur="(e) => handlePriceStringBlur(fieldIndex, optionIndex, e.target.value)"
                         type="text"
                         class="option-price"
                       />
@@ -1657,8 +1862,83 @@ watch(
                 </div>
               </div>
             </div>
+            </div>
           </div>
-        </div>
+
+          <!-- Таблица цен для scan-print -->
+          <div v-if="selectedPage === 'scan-print' && getPlotField" class="price-table-section">
+
+            <div class="price-table-wrapper">
+              <table class="price-table">
+                <thead>
+                  <tr class="price-table-controls-row">
+                    <td :colspan="getPlotFieldOptionsCount + 1" style="padding: 15px; border: 1px solid #e0e0e0;">
+                      <div style="display: flex; align-items: center; gap: 20px;">
+                        <div class="price-table-switch">
+                          <img 
+                            class="tabl-color" 
+                            :class="{ active: priceTableColorMode }"
+                            src="/assets/svg/color.svg" 
+                            alt=""
+                            @click="priceTableColorMode = !priceTableColorMode"
+                          /> 
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <select 
+                            v-model="selectedFormat" 
+                            class="price-table-format-select"
+                          >
+                            <option 
+                              v-for="format in priceTableFormats" 
+                              :key="format.value" 
+                              :value="format.value"
+                            >
+                              {{ format.label }}
+                            </option>
+                          </select>
+                          <button 
+                            @click="addFormatOption" 
+                            class="btn btn-small btn-plus"
+                            style="white-space: nowrap;"
+                          >
+                            + Добавить
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding: 10px;">
+ 
+                    </th>
+                    <th v-for="option in getPlotFieldOptions" :key="option.label" style="padding: 10px; text-align: center;">
+                      {{ option.label.replace(' г/м²', '') }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(label, qIndex) in quantityLabels" :key="qIndex">
+                    <td style="padding: 10px; font-weight: 500; color: var(--green);">
+                      {{ label }}
+                    </td>
+                    <td 
+                      v-for="(option, oIndex) in getPlotFieldOptions" 
+                      :key="oIndex"
+                      style="padding: 5px;"
+                    >
+                      <input
+                        type="number"
+                        step="0.1"
+                        :value="getPriceForDensityAndQuantity(option, qIndex)"
+                        @input="(e) => handleDensityPriceChange(option, qIndex, e)"
+                        class="price-table-input"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
       </div>
 
       <div class="admin-sidebar">
@@ -2332,10 +2612,29 @@ watch(
   margin-bottom: 8px;
 }
 
+.option-default-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 1px solid var(--grey);
+  border-radius: 50%;
+  background: var(--white);
+  transition: all 0.2s;
+}
+
+.option-default-checkbox:checked {
+  background: var(--blue);
+  border: 1px solid var(--blue);
+}
+
 .option-label {
   padding: 2px 10px;
   border: 0px solid #ddd;
-  background: var(--back);
+  background: var(--white);
   border-radius: 4px;
   font-size: 12px;
   width: 100%;
@@ -2347,9 +2646,108 @@ watch(
   border: 0px solid #ddd;
   border-radius: 4px;
   font-size: 12px;
-  background: var(--back);
+  background: var(--white);
   width: 100%;
   color: var(--grey);
+}
+
+.price-table-section {
+  margin-top: 30px;
+  padding: 0px;
+  background: var(--white);
+  border-radius: 8px;
+  border: 0px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.price-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.price-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: white;
+}
+
+.price-table th {
+  background: var(--white);
+  border: 1px solid #e0e0e0;
+  font-weight: 600;
+  color: var(--blue);
+  line-height: 1;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.price-table td {
+  border: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.price-table-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center;
+  background: white;
+  color: var(--grey);
+  transition: border-color 0.2s;
+}
+
+.price-table-input:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.price-table-controls-row {
+  background: var(--white);
+}
+
+.price-table-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tabl-color {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  transition: filter 0.3s;
+  filter: grayscale(0%);
+}
+
+.tabl-color.active {
+  filter: grayscale(100%);
+}
+
+.price-table-switch-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--grey);
+  min-width: 40px;
+}
+
+.price-table-format-select {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  color: var(--grey);
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.price-table-format-select:focus {
+  outline: none;
+  border-color: var(--blue);
 }
 
 .btn {

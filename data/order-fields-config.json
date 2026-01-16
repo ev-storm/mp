@@ -15,7 +15,10 @@
           "price": 40
         }
       ],
-      "value": null
+      "value": {
+        "label": "А4 (210x297 мм)",
+        "price": 25
+      }
     },
     {
       "id": "quantity",
@@ -24,7 +27,7 @@
       "placeholder": "Введите количество",
       "inputType": "number",
       "min": 1,
-      "value": null
+      "value": 1
     },
     {
       "id": "field-1768398465899",
@@ -130,7 +133,7 @@
       "placeholder": "Введите количество",
       "inputType": "number",
       "min": 1,
-      "value": null
+      "value": 1
     },
     {
       "id": "format",
@@ -225,7 +228,7 @@
       "placeholder": "Введите количество",
       "inputType": "number",
       "min": 1,
-      "value": null
+      "value": 1
     }
   ],
   "scan": [
@@ -259,7 +262,7 @@
       "placeholder": "Введите количество",
       "inputType": "number",
       "min": 1,
-      "value": null,
+      "value": 1,
       "thresholdsString": "11, 21, 31",
       "thresholds": [
         10,
@@ -388,7 +391,7 @@
       "placeholder": "Введите количество",
       "inputType": "number",
       "min": 1,
-      "value": null
+      "value": 1
     }
   ],
   "booklet-laser": [
@@ -630,7 +633,7 @@
       "type": "input",
       "label": "Тираж",
       "placeholder": "Введите количество",
-      "value": null,
+      "value": 1,
       "inputType": "number",
       "thresholdsString": "5, 10, 100, 300, 500",
       "thresholds": [
@@ -663,7 +666,13 @@
           "priceString": "2"
         }
       ],
-      "value": null
+      "value": {
+        "label": "А4 (210×297 мм)",
+        "price": [
+          1
+        ],
+        "priceString": "1"
+      }
     },
     {
       "id": "sides",
@@ -686,7 +695,13 @@
           "priceString": "1.5"
         }
       ],
-      "value": null
+      "value": {
+        "label": "Односторонняя",
+        "price": [
+          1
+        ],
+        "priceString": "1"
+      }
     },
     {
       "id": "plot",
@@ -697,45 +712,150 @@
         {
           "label": "80 г/м²",
           "price": [
-            56,
-            48,
-            43,
-            38,
-            32,
-            27
+            19,
+            18,
+            16,
+            11,
+            9,
+            5.5
           ],
-          "priceString": "56,48,43,38,32,27"
+          "priceString": "19,18,16,11,9,5.5"
         },
         {
           "label": "100 г/м²",
-          "price": 0
+          "price": [
+            20,
+            19,
+            17,
+            14,
+            11,
+            9
+          ],
+          "priceString": "20,19,17,14,11,9"
         },
         {
           "label": "130 г/м²",
-          "price": 0
+          "price": [
+            21,
+            20,
+            18,
+            15,
+            12,
+            10
+          ],
+          "priceString": "21,20,18,15,12,10"
         },
         {
           "label": "150 г/м²",
-          "price": 0
+          "price": [
+            22,
+            21,
+            19,
+            16,
+            13,
+            11
+          ],
+          "priceString": "22,21,19,16,13,11"
         },
         {
           "label": "170 г/м²",
-          "price": 0
+          "price": [
+            23,
+            22,
+            20,
+            17,
+            14,
+            12
+          ],
+          "priceString": "23,22,20,17,14,12"
         },
         {
           "label": "200 г/м²",
-          "price": 0
+          "price": [
+            24,
+            23,
+            21,
+            18,
+            15,
+            13
+          ],
+          "priceString": "24,23,21,18,15,13"
         },
         {
           "label": "250 г/м²",
-          "price": 0
+          "price": [
+            25,
+            24,
+            22,
+            19,
+            16,
+            14
+          ],
+          "priceString": "25,24,22,19,16,14"
         },
         {
           "label": "300 г/м²",
+          "price": [
+            40,
+            35,
+            32,
+            22,
+            17,
+            15
+          ],
+          "priceString": "40,35,32,22,17,15"
+        },
+        {
+          "label": "Д.Б.",
+          "price": [
+            96,
+            90,
+            86,
+            81,
+            78,
+            73
+          ],
+          "priceString": "96,90,86,81,78,73"
+        }
+      ],
+      "value": {
+        "label": "80 г/м²",
+        "price": [
+          19,
+          18,
+          16,
+          11,
+          9,
+          5.5
+        ],
+        "priceString": "19,18,16,11,9,5.5"
+      }
+    },
+    {
+      "id": "color",
+      "type": "dropdown",
+      "label": "Цвет",
+      "placeholder": "ч/б",
+      "options": [
+        {
+          "label": "Черно-белая",
+          "price": [
+            0
+          ],
+          "priceString": "0"
+        },
+        {
+          "label": "Цветная",
           "price": 0
         }
       ],
-      "value": null
+      "value": {
+        "label": "Черно-белая",
+        "price": [
+          10
+        ],
+        "priceString": "10"
+      }
     }
   ],
   "photo-test": [],
